@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
+import 'student_view_page.dart';
 
 class StudentsPage extends StatefulWidget {
   const StudentsPage({super.key});
@@ -222,17 +223,17 @@ class _StudentsPageState extends State<StudentsPage> {
       text: isEdit ? student['email'] : '',
     );
     final passwordController = TextEditingController();
-    int? selectedBatchId = isEdit
-        ? student['batch_id']
-        : (_batches.isNotEmpty ? _batches.first['id'] : null);
+    
+    final fatherNameController = TextEditingController(text: isEdit ? student['father_name'] : '');
+    final phoneController = TextEditingController(text: isEdit ? student['phone'] : '');
+    final registrationIdController = TextEditingController(text: isEdit ? student['registration_id'] : '');
+    final addressController = TextEditingController(text: isEdit ? student['address'] : '');
+    String? dob = isEdit ? student['dob'] : null;
+    String? gender = isEdit ? student['gender'] : null;
+
     bool isActive = isEdit
         ? (student['is_active'] == 1 || student['is_active'] == true)
         : true;
-
-    if (_batches.isEmpty) {
-      SnackbarHelper.showError(context, 'Please create a batch first!');
-      return;
-    }
 
     showDialog(
       context: context,
@@ -319,36 +320,88 @@ class _StudentsPageState extends State<StudentsPage> {
                       obscureText: true,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Select Batch',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      value: selectedBatchId,
-                      isExpanded: true,
-                      items: _batches.map<DropdownMenuItem<int>>((batch) {
-                        return DropdownMenuItem<int>(
-                          value: batch['id'],
-                          child: Text(
-                            '${batch['name']} (${batch['course']?['name'] ?? 'Course'})',
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setModalState(() {
-                          selectedBatchId = val;
-                        });
-                      },
+                    TextField(
+                      controller: phoneController,
                       decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
+                        labelText: 'Phone Number (Optional)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: fatherNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Father\'s Name (Optional)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: registrationIdController,
+                      decoration: InputDecoration(
+                        labelText: 'Registration ID (Optional)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Address (Optional)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Gender',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            ),
+                            value: gender,
+                            items: const [
+                              DropdownMenuItem(value: 'Male', child: Text('Male')),
+                              DropdownMenuItem(value: 'Female', child: Text('Female')),
+                              DropdownMenuItem(value: 'Other', child: Text('Other')),
+                            ],
+                            onChanged: (val) => setModalState(() => gender = val),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: dob != null ? DateTime.parse(dob!) : DateTime.now().subtract(const Duration(days: 365 * 18)),
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null) {
+                                setModalState(() {
+                                  dob = "\${picked.year}-\${picked.month.toString().padLeft(2, '0')}-\${picked.day.toString().padLeft(2, '0')}";
+                                });
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'Date of Birth (Optional)',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              ),
+                              child: Text(dob ?? 'Select Date'),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Theme(
@@ -402,8 +455,7 @@ class _StudentsPageState extends State<StudentsPage> {
                           child: ElevatedButton(
                             onPressed: () async {
                               if (nameController.text.isEmpty ||
-                                  emailController.text.isEmpty ||
-                                  selectedBatchId == null) {
+                                  emailController.text.isEmpty) {
                                 SnackbarHelper.showError(
                                   context,
                                   'Please fill in all required fields.',
@@ -433,8 +485,13 @@ class _StudentsPageState extends State<StudentsPage> {
                               final Map<String, dynamic> bodyData = {
                                 'name': nameController.text,
                                 'email': emailController.text,
-                                'batch_id': selectedBatchId,
                                 'is_active': isActive,
+                                'father_name': fatherNameController.text.isEmpty ? null : fatherNameController.text,
+                                'phone': phoneController.text.isEmpty ? null : phoneController.text,
+                                'registration_id': registrationIdController.text.isEmpty ? null : registrationIdController.text,
+                                'address': addressController.text.isEmpty ? null : addressController.text,
+                                'dob': dob,
+                                'gender': gender,
                               };
 
                               if (passwordController.text.isNotEmpty) {
@@ -818,27 +875,34 @@ class _StudentsPageState extends State<StudentsPage> {
                                       ),
                                       DataCell(Text(student['email'])),
                                       DataCell(
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
+                                        Wrap(
+                                          spacing: 4,
+                                          runSpacing: 4,
+                                          children: (student['batches'] as List?)?.map((b) => Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.blue.withOpacity(0.3)),
                                             ),
-                                          ),
-                                          child: Text(
-                                            student['batch'] != null
-                                                ? student['batch']['name']
-                                                : 'No Batch',
-                                            style: const TextStyle(
-                                              color: Colors.blue,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 12,
+                                            child: Text(
+                                              b['name'] ?? 'Unknown',
+                                              style: const TextStyle(
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 11,
+                                              ),
                                             ),
-                                          ),
+                                          )).toList() ?? [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: const Text('No Batch', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                            )
+                                          ],
                                         ),
                                       ),
                                       DataCell(
@@ -871,6 +935,22 @@ class _StudentsPageState extends State<StudentsPage> {
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
+                                            MouseRegion(
+                                              cursor: SystemMouseCursors.click,
+                                              child: IconButton(
+                                                icon: const Icon(Icons.person, size: 20),
+                                                color: Theme.of(context).colorScheme.primary,
+                                                tooltip: 'View Profile',
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => StudentViewPage(studentId: student['id']),
+                                                    ),
+                                                  ).then((_) => _fetchData());
+                                                },
+                                              ),
+                                            ),
                                             MouseRegion(
                                               cursor: SystemMouseCursors.click,
                                               child: IconButton(

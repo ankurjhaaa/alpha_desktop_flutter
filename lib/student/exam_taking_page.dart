@@ -105,130 +105,194 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       ),
       body: _isSubmitting
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(32.0),
+          : Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ],
+                ),
+              ),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 800),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LinearProgressIndicator(
-                        value: (_currentIndex + 1) / widget.questions.length,
-                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        question['question_text'],
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 32),
-                      ...['A', 'B', 'C', 'D'].map((optionLetter) {
-                        final optionText = question['option_${optionLetter.toLowerCase()}'];
-                        if (optionText == null || optionText.toString().isEmpty) return const SizedBox();
-
-                        final isSelected = _answers[qId] == optionLetter;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _answers[qId] = optionLetter;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: isSelected 
-                                      ? Theme.of(context).colorScheme.primary 
-                                      : Theme.of(context).dividerColor.withOpacity(0.2),
-                                  width: isSelected ? 2 : 1,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                color: isSelected 
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.05) 
-                                    : Theme.of(context).cardColor,
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).scaffoldBackgroundColor,
-                                      border: Border.all(
-                                        color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.5),
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        optionLetter,
-                                        style: TextStyle(
-                                          color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Text(
-                                      optionText,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
                           ),
-                        );
-                      }),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: _currentIndex > 0
-                                ? () => setState(() => _currentIndex--)
-                                : null,
-                            icon: const Icon(Icons.arrow_back),
-                            label: const Text('Previous'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                          ),
-                          if (_currentIndex < widget.questions.length - 1)
-                            ElevatedButton.icon(
-                              onPressed: () => setState(() => _currentIndex++),
-                              icon: const Icon(Icons.arrow_forward),
-                              label: const Text('Next'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                            )
-                          else
-                            ElevatedButton.icon(
-                              onPressed: _submitExam,
-                              icon: const Icon(Icons.check_circle),
-                              label: const Text('Submit Exam'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
                         ],
                       ),
-                    ],
+                      padding: const EdgeInsets.all(40),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Question ${_currentIndex + 1} of ${widget.questions.length}',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                '${(((_currentIndex + 1) / widget.questions.length) * 100).toInt()}% Completed',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: (_currentIndex + 1) / widget.questions.length,
+                              minHeight: 8,
+                              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
+                          const SizedBox(height: 48),
+                          Text(
+                            question['question_text'],
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, height: 1.4),
+                          ),
+                          const SizedBox(height: 48),
+                          ...['A', 'B', 'C', 'D'].map((optionLetter) {
+                            final optionText = question['option_${optionLetter.toLowerCase()}'];
+                            if (optionText == null || optionText.toString().isEmpty) return const SizedBox();
+
+                            final isSelected = _answers[qId] == optionLetter;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _answers[qId] = optionLetter;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isSelected 
+                                          ? Theme.of(context).colorScheme.primary 
+                                          : Theme.of(context).dividerColor.withOpacity(0.1),
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: isSelected 
+                                        ? Theme.of(context).colorScheme.primary.withOpacity(0.08) 
+                                        : Theme.of(context).colorScheme.surface,
+                                    boxShadow: isSelected ? [
+                                      BoxShadow(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      )
+                                    ] : [],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).scaffoldBackgroundColor,
+                                          border: Border.all(
+                                            color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.2),
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            optionLetter,
+                                            style: TextStyle(
+                                              color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Expanded(
+                                        child: Text(
+                                          optionText,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                          const Spacer(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: _currentIndex > 0
+                                    ? () => setState(() => _currentIndex--)
+                                    : null,
+                                icon: const Icon(Icons.arrow_back, size: 20),
+                                label: const Text('Previous'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ),
+                              if (_currentIndex < widget.questions.length - 1)
+                                ElevatedButton.icon(
+                                  onPressed: () => setState(() => _currentIndex++),
+                                  icon: const Icon(Icons.arrow_forward, size: 20),
+                                  label: const Text('Next'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                )
+                              else
+                                ElevatedButton.icon(
+                                  onPressed: _submitExam,
+                                  icon: const Icon(Icons.check_circle, size: 20),
+                                  label: const Text('Submit Exam'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

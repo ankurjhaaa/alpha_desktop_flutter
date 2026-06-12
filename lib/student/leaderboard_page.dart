@@ -74,139 +74,175 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _leaderboard.isEmpty
-              ? const Center(child: Text('No results found for this exam yet.'))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 900),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(Icons.leaderboard, size: 64, color: theme.colorScheme.primary),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Top Performers',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'The top 10 students based on percentage score',
-                            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                          ),
-                          const SizedBox(height: 48),
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: theme.cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.02),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
+              ? const Center(child: Text('No results found for this exam yet.', style: TextStyle(fontSize: 16)))
+              : Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                        Theme.of(context).scaffoldBackgroundColor,
+                      ],
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(40),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 800),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.emoji_events, size: 64, color: Theme.of(context).colorScheme.primary),
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: DataTable(
-                                headingRowColor: WidgetStateProperty.all(theme.colorScheme.primary.withOpacity(0.05)),
-                                dataRowMinHeight: 70,
-                                dataRowMaxHeight: 70,
-                                columns: const [
-                                  DataColumn(label: Text('Rank', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Student', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Score', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Percentage', style: TextStyle(fontWeight: FontWeight.bold))),
-                                ],
-                                rows: _leaderboard.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final result = entry.value;
-                                  final rank = index + 1;
-                                  
-                                  Color rankColor;
-                                  if (rank == 1) rankColor = Colors.amber;
-                                  else if (rank == 2) rankColor = Colors.grey.shade400;
-                                  else if (rank == 3) rankColor = Colors.brown.shade300;
-                                  else rankColor = theme.colorScheme.onSurface;
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Leaderboard',
+                              style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -1),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Top performers for \${widget.paperTitle}',
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 16),
+                            ),
+                            const SizedBox(height: 56),
+                            ..._leaderboard.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final result = entry.value;
+                              final rank = index + 1;
+                              final isTop3 = rank <= 3;
+                              
+                              Color rankColor;
+                              Color rankBgColor;
+                              if (rank == 1) {
+                                rankColor = const Color(0xFFFFD700);
+                                rankBgColor = const Color(0xFFFFD700).withOpacity(0.15);
+                              } else if (rank == 2) {
+                                rankColor = const Color(0xFFC0C0C0);
+                                rankBgColor = const Color(0xFFC0C0C0).withOpacity(0.15);
+                              } else if (rank == 3) {
+                                rankColor = const Color(0xFFCD7F32);
+                                rankBgColor = const Color(0xFFCD7F32).withOpacity(0.15);
+                              } else {
+                                rankColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.5);
+                                rankBgColor = Theme.of(context).colorScheme.surface;
+                              }
 
-                                  return DataRow(
-                                    color: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-                                      if (index % 2 == 1) {
-                                        return theme.dividerColor.withOpacity(0.02);
-                                      }
-                                      return null;
-                                    }),
-                                    cells: [
-                                      DataCell(
-                                        Row(
-                                          children: [
-                                            if (rank <= 3) ...[
-                                              Icon(Icons.military_tech, color: rankColor),
-                                              const SizedBox(width: 4),
-                                            ] else const SizedBox(width: 28),
-                                            Text(
-                                              '#$rank',
-                                              style: TextStyle(
-                                                fontWeight: rank <= 3 ? FontWeight.bold : FontWeight.normal,
-                                                color: rankColor,
-                                                fontSize: rank <= 3 ? 16 : 14,
-                                              ),
-                                            ),
-                                          ],
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(isTop3 ? 24 : 16),
+                                  boxShadow: isTop3 ? [
+                                    BoxShadow(
+                                      color: rankColor.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    )
+                                  ] : [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.02),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ],
+                                  border: Border.all(
+                                    color: isTop3 ? rankColor.withOpacity(0.3) : Theme.of(context).dividerColor.withOpacity(0.05),
+                                    width: isTop3 ? 2 : 1,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: isTop3 ? 24 : 16),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: isTop3 ? 56 : 40,
+                                        height: isTop3 ? 56 : 40,
+                                        decoration: BoxDecoration(
+                                          color: rankBgColor,
+                                          shape: BoxShape.circle,
                                         ),
-                                      ),
-                                      DataCell(
-                                        Row(
-                                          children: [
-                                            CircleAvatar(
-                                              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                                              child: Text(
-                                                result['user'] != null && result['user']['name'] != null 
-                                                    ? result['user']['name'].toString().substring(0, 1).toUpperCase()
-                                                    : 'U',
-                                                style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            Text(
-                                              result['user'] != null ? result['user']['name'] : 'Unknown User',
-                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          '${result["score"]}/${result["total_questions"]}',
-                                          style: const TextStyle(fontWeight: FontWeight.w500),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(16),
-                                          ),
+                                        child: Center(
                                           child: Text(
-                                            '${result["percentage"]}%',
-                                            style: const TextStyle(
-                                              color: Colors.blue,
+                                            '#$rank',
+                                            style: TextStyle(
+                                              color: isTop3 ? rankColor : Theme.of(context).colorScheme.onSurface,
                                               fontWeight: FontWeight.bold,
+                                              fontSize: isTop3 ? 20 : 14,
                                             ),
                                           ),
                                         ),
+                                      ),
+                                      const SizedBox(width: 24),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              result['student_name'] ?? 'Unknown User',
+                                              style: TextStyle(
+                                                fontWeight: isTop3 ? FontWeight.bold : FontWeight.w600,
+                                                fontSize: isTop3 ? 20 : 16,
+                                              ),
+                                            ),
+                                            if (isTop3) ...[
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.stars, size: 14, color: rankColor),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    'Top Performer',
+                                                    style: TextStyle(color: rankColor, fontSize: 12, fontWeight: FontWeight.w600),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.symmetric(horizontal: isTop3 ? 16 : 12, vertical: isTop3 ? 8 : 4),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              '${result["percentage"]}%',
+                                              style: TextStyle(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: isTop3 ? 18 : 14,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${result["score"]} / ${result["total_questions"]}',
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
-                        ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
                       ),
                     ),
                   ),

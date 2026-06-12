@@ -195,46 +195,58 @@ class _ExamsPageState extends State<ExamsPage> {
 
     return StudentLayout(
       title: 'Exams',
-      child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _exams.isEmpty
-              ? const Center(child: Text('No exams available for your batch.'))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Available Exams',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Unlock and complete your pending exams.',
-                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                      ),
-                      const SizedBox(height: 32),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isDesktop = constraints.maxWidth > 800;
-                          final crossAxisCount = isDesktop ? 3 : 1;
-                          final width = (constraints.maxWidth - (24 * (crossAxisCount - 1))) / crossAxisCount;
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.primary.withOpacity(0.05),
+              Colors.purpleAccent.withOpacity(0.05),
+            ],
+          ),
+        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _exams.isEmpty
+                ? const Center(child: Text('No exams available for your batches.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Available Exams',
+                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Unlock and complete your pending exams.',
+                          style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                        ),
+                        const SizedBox(height: 40),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isDesktop = constraints.maxWidth > 800;
+                            final crossAxisCount = isDesktop ? 3 : 1;
+                            final width = (constraints.maxWidth - (32 * (crossAxisCount - 1))) / crossAxisCount;
 
-                          return Wrap(
-                            spacing: 24,
-                            runSpacing: 24,
-                            children: _exams.map((exam) {
-                              return SizedBox(
-                                width: width,
-                                child: _buildExamCard(exam, theme),
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                    ],
+                            return Wrap(
+                              spacing: 32,
+                              runSpacing: 32,
+                              children: _exams.map((exam) {
+                                return SizedBox(
+                                  width: width,
+                                  child: _buildExamCard(exam, theme),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+      ),
     );
   }
 
@@ -250,14 +262,21 @@ class _ExamsPageState extends State<ExamsPage> {
       isLocked = todayMidnight.isBefore(examMidnight);
     }
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: theme.dividerColor.withOpacity(0.08)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
