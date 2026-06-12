@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 import 'mcq_question_manager_page.dart';
+import 'mcq_paper_results_page.dart';
 
 class McqManagerPage extends StatefulWidget {
   const McqManagerPage({super.key});
@@ -906,6 +907,46 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                                 ),
                                                 label: const Text('Questions'),
                                                 style: ElevatedButton.styleFrom(
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 8,
+                                                      ),
+                                                  elevation: 0,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            MouseRegion(
+                                              cursor: SystemMouseCursors.click,
+                                              child: ElevatedButton.icon(
+                                                onPressed: () {
+                                                  // TODO: Import McqPaperResultsPage and navigate
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          McqPaperResultsPage(
+                                                            paperId: paper['id'],
+                                                            paperTitle: paper['title'],
+                                                          ),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(
+                                                  Icons.bar_chart,
+                                                  size: 16,
+                                                ),
+                                                label: const Text('Results'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.purple.withOpacity(0.1),
+                                                  foregroundColor: Colors.purple,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
