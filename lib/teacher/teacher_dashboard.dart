@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:alpha_desktop_flutter/core/utils/snackbar_helper.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 
 class TeacherDashboard extends StatelessWidget {
@@ -8,14 +12,108 @@ class TeacherDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return TeacherLayout(
       title: 'Dashboard',
-      child: _TeacherDashboardContent(),
+      child: const _TeacherDashboardContent(),
     );
   }
 }
 
-class _TeacherDashboardContent extends StatelessWidget {
+class _TeacherDashboardContent extends StatefulWidget {
+  const _TeacherDashboardContent({Key? key}) : super(key: key);
+
+  @override
+  State<_TeacherDashboardContent> createState() =>
+      _TeacherDashboardContentState();
+}
+
+class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
+  bool _isLoading = true;
+  int _totalStudents = 0;
+  int _activeCourses = 0;
+  int _activeBatches = 0;
+  int _totalMcqPapers = 0;
+  List<dynamic> _recentStudents = [];
+  List<dynamic> _upcomingBatches = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboardData();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) return;
+
+    try {
+      final coursesRes = await http.get(
+        Uri.parse('http://127.0.0.1:8000/api/courses'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+      final batchesRes = await http.get(
+        Uri.parse('http://127.0.0.1:8000/api/batches'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+      final studentsRes = await http.get(
+        Uri.parse('http://127.0.0.1:8000/api/students'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+      final mcqRes = await http.get(
+        Uri.parse('http://127.0.0.1:8000/api/mcq_papers'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (coursesRes.statusCode == 200 &&
+          batchesRes.statusCode == 200 &&
+          studentsRes.statusCode == 200 &&
+          mcqRes.statusCode == 200) {
+        final courses = jsonDecode(coursesRes.body) as List;
+        final batches = jsonDecode(batchesRes.body) as List;
+        final students = jsonDecode(studentsRes.body) as List;
+        final mcqs = jsonDecode(mcqRes.body) as List;
+
+        setState(() {
+          _activeCourses = courses
+              .where((c) => c['is_active'] == 1 || c['is_active'] == true)
+              .length;
+          _activeBatches = batches
+              .where((b) => b['is_active'] == 1 || b['is_active'] == true)
+              .length;
+          _totalStudents = students.length;
+          _totalMcqPapers = mcqs.length;
+
+          // Take top 3 for upcoming batches
+          _upcomingBatches = batches.take(3).toList();
+          // Take the last 4 students for recent activity
+          _recentStudents = students.reversed.take(4).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return SingleChildScrollView(
@@ -32,37 +130,94 @@ class _TeacherDashboardContent extends StatelessWidget {
                   children: [
                     const Text(
                       'Welcome back, Teacher!',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Here is your summary for today.',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                      'Here is your live summary for today.',
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add),
-                label: const Text('New Assignment'),
-              )
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: ElevatedButton.icon(
+                  onPressed: _fetchDashboardData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh Data'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 32),
           LayoutBuilder(
             builder: (context, constraints) {
               final crossAxisCount = isDesktop ? 4 : 2;
-              final width = (constraints.maxWidth - (24 * (crossAxisCount - 1))) / crossAxisCount;
+              final width =
+                  (constraints.maxWidth - (24 * (crossAxisCount - 1))) /
+                  crossAxisCount;
               return Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
-                  SizedBox(width: width, child: _buildStatCard(context, 'Total Students', '1,242', Icons.people_alt, Colors.blue)),
-                  SizedBox(width: width, child: _buildStatCard(context, 'Active Classes', '14', Icons.class_, Colors.green)),
-                  SizedBox(width: width, child: _buildStatCard(context, 'Assignments to Grade', '38', Icons.grading, Colors.orange)),
-                  SizedBox(width: width, child: _buildStatCard(context, 'Upcoming Exams', '3', Icons.event_note, Colors.purple)),
+                  SizedBox(
+                    width: width,
+                    child: _buildStatCard(
+                      context,
+                      'Total Students',
+                      _totalStudents.toString(),
+                      Icons.people_alt,
+                      Colors.blue,
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _buildStatCard(
+                      context,
+                      'Active Courses',
+                      _activeCourses.toString(),
+                      Icons.class_,
+                      Colors.green,
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _buildStatCard(
+                      context,
+                      'Active Batches',
+                      _activeBatches.toString(),
+                      Icons.group_work,
+                      Colors.orange,
+                    ),
+                  ),
+                  SizedBox(
+                    width: width,
+                    child: _buildStatCard(
+                      context,
+                      'Total MCQ Papers',
+                      _totalMcqPapers.toString(),
+                      Icons.quiz,
+                      Colors.purple,
+                    ),
+                  ),
                 ],
               );
             },
@@ -71,16 +226,10 @@ class _TeacherDashboardContent extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 7,
-                child: _buildRecentActivity(context),
-              ),
+              Expanded(flex: 7, child: _buildRecentActivity(context)),
               if (isDesktop) const SizedBox(width: 32),
               if (isDesktop)
-                Expanded(
-                  flex: 4,
-                  child: _buildUpcomingSchedule(context),
-                ),
+                Expanded(flex: 4, child: _buildUpcomingSchedule(context)),
             ],
           ),
           if (!isDesktop) const SizedBox(height: 32),
@@ -90,9 +239,16 @@ class _TeacherDashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -106,7 +262,9 @@ class _TeacherDashboardContent extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isDark ? color.withOpacity(0.2) : color.withOpacity(0.1),
+                    color: isDark
+                        ? color.withOpacity(0.2)
+                        : color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -118,7 +276,13 @@ class _TeacherDashboardContent extends StatelessWidget {
                     children: const [
                       Icon(Icons.arrow_upward, color: Colors.green, size: 16),
                       SizedBox(width: 4),
-                      Text('12%', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Live',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -127,10 +291,7 @@ class _TeacherDashboardContent extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
@@ -149,30 +310,52 @@ class _TeacherDashboardContent extends StatelessWidget {
 
   Widget _buildRecentActivity(BuildContext context) {
     return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Recent Activity',
+              'Recent Enrollments',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-            _buildActivityItem(context, 'Rohan Sharma submitted Physics Assignment', '10 mins ago', Icons.check_circle, Colors.green),
-            const Divider(height: 32),
-            _buildActivityItem(context, 'New student joined Advanced Math', '1 hour ago', Icons.person_add, Colors.blue),
-            const Divider(height: 32),
-            _buildActivityItem(context, 'Grade required for Final Project', '3 hours ago', Icons.warning, Colors.orange),
-            const Divider(height: 32),
-            _buildActivityItem(context, 'System maintenance scheduled', 'Yesterday', Icons.info, Colors.grey),
+            if (_recentStudents.isEmpty)
+              const Center(
+                child: Text(
+                  "No recent students found.",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ..._recentStudents.map((student) {
+              return Column(
+                children: [
+                  _buildActivityItem(
+                    context,
+                    'New student ${student['name']} joined.',
+                    student['email'],
+                    Icons.person_add,
+                    Colors.blue,
+                  ),
+                  if (student != _recentStudents.last)
+                    const Divider(height: 32),
+                ],
+              );
+            }).toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, String text, String time, IconData icon, Color iconColor) {
+  Widget _buildActivityItem(
+    BuildContext context,
+    String text,
+    String subtitle,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Row(
       children: [
         Container(
@@ -188,9 +371,23 @@ class _TeacherDashboardContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(text, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              Text(
+                text,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(time, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 13)),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.5),
+                  fontSize: 13,
+                ),
+              ),
             ],
           ),
         ),
@@ -200,6 +397,7 @@ class _TeacherDashboardContent extends StatelessWidget {
 
   Widget _buildUpcomingSchedule(BuildContext context) {
     return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -208,31 +406,54 @@ class _TeacherDashboardContent extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: const Text(
-                    'Upcoming Schedule',
+                const Expanded(
+                  child: Text(
+                    'Upcoming Batches',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('View All'),
-                )
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: TextButton(
+                    onPressed: () {},
+                    child: const Text('View All'),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            _buildScheduleItem(context, 'Advanced Physics', '10:00 AM - 11:30 AM', 'Room 302'),
-            const SizedBox(height: 16),
-            _buildScheduleItem(context, 'Mathematics 101', '1:00 PM - 2:30 PM', 'Room 105'),
-            const SizedBox(height: 16),
-            _buildScheduleItem(context, 'Computer Science', '3:00 PM - 4:30 PM', 'Lab A'),
+            if (_upcomingBatches.isEmpty)
+              const Center(
+                child: Text(
+                  "No upcoming batches scheduled.",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ..._upcomingBatches.map((batch) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: _buildScheduleItem(
+                  context,
+                  batch['name'],
+                  batch['schedule_time'] ?? 'TBD',
+                  batch['course'] != null
+                      ? batch['course']['name']
+                      : 'General Course',
+                ),
+              );
+            }).toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildScheduleItem(BuildContext context, String subject, String time, String room) {
+  Widget _buildScheduleItem(
+    BuildContext context,
+    String subject,
+    String time,
+    String courseName,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     return Container(
@@ -257,18 +478,52 @@ class _TeacherDashboardContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(subject, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(
+                  subject,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 4,
                   runSpacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                    Text(time, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    Text(
+                      time,
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Icon(Icons.location_on, size: 14, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                    Text(room, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
+                    Icon(
+                      Icons.class_,
+                      size: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    Text(
+                      courseName,
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
               ],

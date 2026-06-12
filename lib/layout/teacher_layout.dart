@@ -3,6 +3,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import '../auth/login_page.dart';
 import '../core/widgets/theme_toggle_button.dart';
+import '../teacher/teacher_dashboard.dart';
+import '../teacher/course_manager_page.dart';
+import '../teacher/batch_manager_page.dart';
+import '../teacher/students_page.dart';
+import '../teacher/mcq_manager_page.dart';
 
 class TeacherLayout extends StatelessWidget {
   final Widget child;
@@ -132,11 +137,12 @@ class TeacherLayout extends StatelessWidget {
 
   Widget _buildSidebar(BuildContext context, ThemeData theme, {bool isDrawer = false}) {
     final List<Map<String, dynamic>> menuItems = [
-      {'title': 'Dashboard', 'icon': Icons.dashboard_outlined, 'activeIcon': Icons.dashboard, 'isActive': title == 'Dashboard'},
-      {'title': 'Classes', 'icon': Icons.class_outlined, 'activeIcon': Icons.class_, 'isActive': title == 'Classes'},
-      {'title': 'Students', 'icon': Icons.people_outline, 'activeIcon': Icons.people, 'isActive': title == 'Students'},
-      {'title': 'Assignments', 'icon': Icons.assignment_outlined, 'activeIcon': Icons.assignment, 'isActive': title == 'Assignments'},
-      {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': title == 'Settings'},
+      {'title': 'Dashboard', 'icon': Icons.dashboard_outlined, 'activeIcon': Icons.dashboard, 'isActive': title == 'Dashboard', 'page': const TeacherDashboard()},
+      {'title': 'Courses', 'icon': Icons.book_outlined, 'activeIcon': Icons.book, 'isActive': title == 'Courses', 'page': const CourseManagerPage()},
+      {'title': 'Batches', 'icon': Icons.class_outlined, 'activeIcon': Icons.class_, 'isActive': title == 'Batches', 'page': const BatchManagerPage()},
+      {'title': 'Students', 'icon': Icons.people_outline, 'activeIcon': Icons.people, 'isActive': title == 'Students', 'page': const StudentsPage()},
+      {'title': 'MCQ Papers', 'icon': Icons.assignment_outlined, 'activeIcon': Icons.assignment, 'isActive': title == 'MCQ Papers', 'page': const McqManagerPage()},
+      {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': title == 'Settings', 'page': null},
     ];
 
     return Container(
@@ -215,7 +221,16 @@ class TeacherLayout extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
                       if (isDrawer) Navigator.pop(context); // close drawer
-                      // TODO: Navigate to the respective page
+                      if (!isSelected && item['page'] != null) {
+                        Navigator.pushReplacement(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation1, animation2) => item['page'],
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
+                          ),
+                        );
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
