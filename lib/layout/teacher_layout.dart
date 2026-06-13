@@ -139,8 +139,8 @@ class TeacherLayout extends StatelessWidget {
   Widget _buildSidebar(BuildContext context, ThemeData theme, {bool isDrawer = false}) {
     final List<Map<String, dynamic>> menuItems = [
       {'title': 'Dashboard', 'icon': Icons.dashboard_outlined, 'activeIcon': Icons.dashboard, 'isActive': title == 'Dashboard', 'page': const TeacherDashboard()},
-      {'title': 'Courses', 'icon': Icons.book_outlined, 'activeIcon': Icons.book, 'isActive': title == 'Courses', 'page': const CourseManagerPage()},
-      {'title': 'Batches', 'icon': Icons.class_outlined, 'activeIcon': Icons.class_, 'isActive': title == 'Batches', 'page': const BatchManagerPage()},
+      {'title': 'Courses', 'icon': Icons.menu_book_outlined, 'activeIcon': Icons.menu_book, 'isActive': title == 'Courses', 'page': const CourseManagerPage()},
+      {'title': 'Batches', 'icon': Icons.layers_outlined, 'activeIcon': Icons.layers, 'isActive': title == 'Batches', 'page': const BatchManagerPage()},
       {'title': 'Students', 'icon': Icons.people_outline, 'activeIcon': Icons.people, 'isActive': title == 'Students', 'page': const StudentsPage()},
       {'title': 'MCQ Papers', 'icon': Icons.assignment_outlined, 'activeIcon': Icons.assignment, 'isActive': title == 'MCQ Papers', 'page': const McqManagerPage()},
       {'title': 'Study Materials', 'icon': Icons.library_books_outlined, 'activeIcon': Icons.library_books, 'isActive': title == 'Study Materials', 'page': const MaterialManagerPage()},

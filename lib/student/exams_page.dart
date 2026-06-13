@@ -19,6 +19,11 @@ class _ExamsPageState extends State<ExamsPage> {
   List<dynamic> _exams = [];
   bool _isLoading = true;
 
+  String _searchQuery = '';
+  String _selectedStatus = 'All'; // All, Pending, Completed
+  String _selectedBatch = 'All';
+  List<String> _uniqueBatches = ['All'];
+
   @override
   void initState() {
     super.initState();
@@ -40,10 +45,22 @@ class _ExamsPageState extends State<ExamsPage> {
       );
 
       if (response.statusCode == 200) {
+        final List<dynamic> fetchedExams = jsonDecode(response.body);
+        fetchedExams.sort((a, b) => (b['id'] as int).compareTo(a['id'] as int));
+        
+        final Set<String> batches = {'All'};
+        for (var e in fetchedExams) {
+          if (e['batch'] != null && e['batch']['name'] != null) {
+            batches.add(e['batch']['name']);
+          }
+        }
+
         setState(() {
-          final List<dynamic> fetchedExams = jsonDecode(response.body);
-          fetchedExams.sort((a, b) => (b['id'] as int).compareTo(a['id'] as int));
           _exams = fetchedExams;
+          _uniqueBatches = batches.toList();
+          if (!_uniqueBatches.contains(_selectedBatch)) {
+            _selectedBatch = 'All';
+          }
           _isLoading = false;
         });
       } else {
@@ -233,9 +250,31 @@ class _ExamsPageState extends State<ExamsPage> {
         width: double.infinity,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _exams.isEmpty
-                ? const Center(child: Text('No exams available for your batches.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)))
-                : SingleChildScrollView(
+            : Builder(
+                builder: (context) {
+                  final filteredExams = _exams.where((exam) {
+                    final isCompleted = exam['is_completed'] == true;
+                    
+                    // Status Filter
+                    bool matchesStatus = true;
+                    if (_selectedStatus == 'Pending') {
+                      matchesStatus = !isCompleted;
+                    } else if (_selectedStatus == 'Completed') {
+                      matchesStatus = isCompleted;
+                    }
+
+                    // Batch Filter
+                    final matchesBatch = _selectedBatch == 'All' || (exam['batch'] != null && exam['batch']['name'] == _selectedBatch);
+
+                    // Search Filter
+                    final matchesSearch = _searchQuery.isEmpty ||
+                        (exam['title']?.toLowerCase() ?? '').contains(_searchQuery) ||
+                        (exam['description']?.toLowerCase() ?? '').contains(_searchQuery);
+                        
+                    return matchesStatus && matchesBatch && matchesSearch;
+                  }).toList();
+
+                  return SingleChildScrollView(
                     padding: const EdgeInsets.all(32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,28 +288,120 @@ class _ExamsPageState extends State<ExamsPage> {
                           'Unlock and complete your pending exams.',
                           style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                         ),
-                        const SizedBox(height: 40),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isDesktop = constraints.maxWidth > 800;
-                            final crossAxisCount = isDesktop ? 3 : 1;
-                            final width = (constraints.maxWidth - (32 * (crossAxisCount - 1))) / crossAxisCount;
-
-                            return Wrap(
-                              spacing: 32,
-                              runSpacing: 32,
-                              children: _exams.map((exam) {
-                                return SizedBox(
-                                  width: width,
-                                  child: _buildExamCard(exam, theme),
-                                );
-                              }).toList(),
-                            );
-                          },
+                        const SizedBox(height: 32),
+                        
+                        // Filter Tabs & Search
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    ...['All', 'Pending', 'Completed'].map((status) {
+                                      final isSelected = _selectedStatus == status;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 12.0),
+                                        child: ChoiceChip(
+                                          label: Text(status),
+                                          selected: isSelected,
+                                          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                          onSelected: (selected) {
+                                            if (selected) {
+                                              setState(() => _selectedStatus = status);
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                    Container(width: 1, height: 24, color: Colors.grey.withOpacity(0.3), margin: const EdgeInsets.symmetric(horizontal: 8)),
+                                    ..._uniqueBatches.map((batchName) {
+                                      final isSelected = _selectedBatch == batchName;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(left: 12.0),
+                                        child: ChoiceChip(
+                                          label: Text(batchName),
+                                          selected: isSelected,
+                                          onSelected: (selected) {
+                                            if (selected) {
+                                              setState(() => _selectedBatch = batchName);
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            SizedBox(
+                              width: 300,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: 'Search exams...',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                                  ),
+                                  filled: true,
+                                  fillColor: Theme.of(context).colorScheme.surface,
+                                ),
+                                onChanged: (val) {
+                                  setState(() => _searchQuery = val.toLowerCase());
+                                },
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 40),
+                        
+                        if (filteredExams.isEmpty)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(64.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.search_off, size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No matching exams found',
+                                    style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isDesktop = constraints.maxWidth > 800;
+                              final crossAxisCount = isDesktop ? 3 : 1;
+                              final width = (constraints.maxWidth - (32 * (crossAxisCount - 1))) / crossAxisCount;
+
+                              return Wrap(
+                                spacing: 32,
+                                runSpacing: 32,
+                                children: filteredExams.map((exam) {
+                                  return SizedBox(
+                                    width: width,
+                                    child: _buildExamCard(exam, theme),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          ),
                       ],
                     ),
-                  ),
+                  );
+                }
+              ),
       ),
     );
   }
