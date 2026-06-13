@@ -8,6 +8,7 @@ import '../teacher/course_manager_page.dart';
 import '../teacher/batch_manager_page.dart';
 import '../teacher/students_page.dart';
 import '../teacher/mcq_manager_page.dart';
+import '../teacher/material_manager_page.dart';
 
 class TeacherLayout extends StatelessWidget {
   final Widget child;
@@ -142,6 +143,7 @@ class TeacherLayout extends StatelessWidget {
       {'title': 'Batches', 'icon': Icons.class_outlined, 'activeIcon': Icons.class_, 'isActive': title == 'Batches', 'page': const BatchManagerPage()},
       {'title': 'Students', 'icon': Icons.people_outline, 'activeIcon': Icons.people, 'isActive': title == 'Students', 'page': const StudentsPage()},
       {'title': 'MCQ Papers', 'icon': Icons.assignment_outlined, 'activeIcon': Icons.assignment, 'isActive': title == 'MCQ Papers', 'page': const McqManagerPage()},
+      {'title': 'Study Materials', 'icon': Icons.library_books_outlined, 'activeIcon': Icons.library_books, 'isActive': title == 'Study Materials', 'page': const MaterialManagerPage()},
       {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': title == 'Settings', 'page': null},
     ];
 
