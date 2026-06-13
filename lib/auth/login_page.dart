@@ -8,6 +8,7 @@ import '../core/widgets/custom_button.dart';
 import '../core/widgets/theme_toggle_button.dart';
 import '../student/student_dashboard.dart';
 import '../teacher/teacher_dashboard.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -37,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/login'),
+        Uri.parse(ApiConstants.baseUrl + '/login'),
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/student_layout.dart';
 import 'package:alpha_desktop_flutter/core/utils/snackbar_helper.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class MaterialsPage extends StatefulWidget {
   const MaterialsPage({super.key});
@@ -33,7 +34,7 @@ class _MaterialsPageState extends State<MaterialsPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/materials'),
+        Uri.parse(ApiConstants.baseUrl + '/materials'),
         headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
       );
 

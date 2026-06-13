@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/utils/snackbar_helper.dart';
 import '../layout/teacher_layout.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class FeedbackManagerPage extends StatefulWidget {
   const FeedbackManagerPage({super.key});
@@ -54,7 +55,7 @@ class _FeedbackManagerPageState extends State<FeedbackManagerPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/feedbacks?page=$page'),
+        Uri.parse(ApiConstants.baseUrl + '/feedbacks?page=$page'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

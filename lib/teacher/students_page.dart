@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 import 'student_view_page.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class StudentsPage extends StatefulWidget {
   const StudentsPage({super.key});
@@ -36,14 +37,14 @@ class _StudentsPageState extends State<StudentsPage> {
 
     try {
       final coursesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/courses'),
+        Uri.parse(ApiConstants.baseUrl + '/courses'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
 
-      final batchUri = Uri.parse('http://127.0.0.1:8000/api/batches').replace(
+      final batchUri = Uri.parse(ApiConstants.baseUrl + '/batches').replace(
         queryParameters: {
           if (_courseFilter != null) 'course_id': _courseFilter,
         },
@@ -56,7 +57,7 @@ class _StudentsPageState extends State<StudentsPage> {
         },
       );
 
-      final studentUri = Uri.parse('http://127.0.0.1:8000/api/students')
+      final studentUri = Uri.parse(ApiConstants.baseUrl + '/students')
           .replace(
             queryParameters: {
               if (_searchQuery.isNotEmpty) 'search': _searchQuery,
@@ -129,7 +130,7 @@ class _StudentsPageState extends State<StudentsPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:8000/api/students/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/students/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -189,7 +190,7 @@ class _StudentsPageState extends State<StudentsPage> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://127.0.0.1:8000/api/students/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/students/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -529,8 +530,8 @@ class _StudentsPageState extends State<StudentsPage> {
                               final token = prefs.getString('auth_token');
 
                               final url = isEdit
-                                  ? 'http://127.0.0.1:8000/api/students/${student['id']}'
-                                  : 'http://127.0.0.1:8000/api/students';
+                                  ? ApiConstants.baseUrl + '/students/${student['id']}'
+                                  : ApiConstants.baseUrl + '/students';
 
                               final requestMethod = isEdit
                                   ? http.put

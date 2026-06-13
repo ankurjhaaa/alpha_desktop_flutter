@@ -7,6 +7,7 @@ import '../core/utils/snackbar_helper.dart';
 import 'exam_taking_page.dart';
 import 'leaderboard_page.dart';
 import 'exam_answers_page.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class ExamsPage extends StatefulWidget {
   const ExamsPage({super.key});
@@ -37,7 +38,7 @@ class _ExamsPageState extends State<ExamsPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/student/exams'),
+        Uri.parse(ApiConstants.baseUrl + '/student/exams'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -166,7 +167,7 @@ class _ExamsPageState extends State<ExamsPage> {
 
                       try {
                         final response = await http.post(
-                          Uri.parse('http://127.0.0.1:8000/api/student/exams/${exam["id"]}/verify'),
+                          Uri.parse(ApiConstants.baseUrl + '/student/exams/${exam["id"]}/verify'),
                           headers: {
                             'Authorization': 'Bearer $token',
                             'Accept': 'application/json',
@@ -208,7 +209,7 @@ class _ExamsPageState extends State<ExamsPage> {
     final token = prefs.getString('auth_token');
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/student/exams/$id/verify'),
+        Uri.parse(ApiConstants.baseUrl + '/student/exams/$id/verify'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

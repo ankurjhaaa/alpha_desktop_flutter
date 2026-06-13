@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class McqQuestionManagerPage extends StatefulWidget {
   final Map<String, dynamic> paper;
@@ -32,7 +33,7 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
     if (token == null) return;
 
     try {
-      final uri = Uri.parse('http://127.0.0.1:8000/api/mcq_questions').replace(
+      final uri = Uri.parse(ApiConstants.baseUrl + '/mcq_questions').replace(
         queryParameters: {
           'mcq_paper_id': widget.paper['id'].toString(),
           if (_searchQuery.isNotEmpty) 'search': _searchQuery,
@@ -103,7 +104,7 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:8000/api/mcq_questions/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/mcq_questions/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -163,7 +164,7 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://127.0.0.1:8000/api/mcq_questions/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/mcq_questions/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -399,8 +400,8 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                               final token = prefs.getString('auth_token');
 
                               final url = isEdit
-                                  ? 'http://127.0.0.1:8000/api/mcq_questions/${question['id']}'
-                                  : 'http://127.0.0.1:8000/api/mcq_questions';
+                                  ? ApiConstants.baseUrl + '/mcq_questions/${question['id']}'
+                                  : ApiConstants.baseUrl + '/mcq_questions';
 
                               final requestMethod = isEdit
                                   ? http.put

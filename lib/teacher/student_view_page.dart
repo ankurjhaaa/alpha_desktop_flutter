@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 import '../core/utils/snackbar_helper.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class StudentViewPage extends StatefulWidget {
   final int studentId;
@@ -32,7 +33,7 @@ class _StudentViewPageState extends State<StudentViewPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/students/${widget.studentId}'),
+        Uri.parse(ApiConstants.baseUrl + '/students/${widget.studentId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -66,7 +67,7 @@ class _StudentViewPageState extends State<StudentViewPage> {
     
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/batches'),
+        Uri.parse(ApiConstants.baseUrl + '/batches'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -91,7 +92,7 @@ class _StudentViewPageState extends State<StudentViewPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/students/${widget.studentId}/batches'),
+        Uri.parse(ApiConstants.baseUrl + '/students/${widget.studentId}/batches'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

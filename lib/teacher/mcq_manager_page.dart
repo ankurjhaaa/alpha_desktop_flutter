@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 import 'mcq_question_manager_page.dart';
 import 'mcq_paper_results_page.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class McqManagerPage extends StatefulWidget {
   const McqManagerPage({super.key});
@@ -38,7 +39,7 @@ class _McqManagerPageState extends State<McqManagerPage> {
 
     try {
       final coursesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/courses'),
+        Uri.parse(ApiConstants.baseUrl + '/courses'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -46,14 +47,14 @@ class _McqManagerPageState extends State<McqManagerPage> {
       );
 
       final batchesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/batches'),
+        Uri.parse(ApiConstants.baseUrl + '/batches'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
 
-      final papersUri = Uri.parse('http://127.0.0.1:8000/api/mcq_papers')
+      final papersUri = Uri.parse(ApiConstants.baseUrl + '/mcq_papers')
           .replace(
             queryParameters: {
               if (_searchQuery.isNotEmpty) 'search': _searchQuery,
@@ -127,7 +128,7 @@ class _McqManagerPageState extends State<McqManagerPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:8000/api/mcq_papers/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/mcq_papers/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -178,7 +179,7 @@ class _McqManagerPageState extends State<McqManagerPage> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://127.0.0.1:8000/api/mcq_papers/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/mcq_papers/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -436,8 +437,8 @@ class _McqManagerPageState extends State<McqManagerPage> {
                               final token = prefs.getString('auth_token');
 
                               final url = isEdit
-                                  ? 'http://127.0.0.1:8000/api/mcq_papers/${paper['id']}'
-                                  : 'http://127.0.0.1:8000/api/mcq_papers';
+                                  ? ApiConstants.baseUrl + '/mcq_papers/${paper['id']}'
+                                  : ApiConstants.baseUrl + '/mcq_papers';
 
                               final requestMethod = isEdit
                                   ? http.put

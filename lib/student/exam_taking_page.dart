@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/utils/snackbar_helper.dart';
 import 'exam_result_page.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class ExamTakingPage extends StatefulWidget {
   final int paperId;
@@ -48,7 +49,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/student/exams/${widget.paperId}/submit'),
+        Uri.parse(ApiConstants.baseUrl + '/student/exams/${widget.paperId}/submit'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

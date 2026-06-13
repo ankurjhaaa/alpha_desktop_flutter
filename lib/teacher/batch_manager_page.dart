@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class BatchManagerPage extends StatefulWidget {
   const BatchManagerPage({super.key});
@@ -33,14 +34,14 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
 
     try {
       final coursesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/courses'),
+        Uri.parse(ApiConstants.baseUrl + '/courses'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
 
-      final batchUri = Uri.parse('http://127.0.0.1:8000/api/batches').replace(
+      final batchUri = Uri.parse(ApiConstants.baseUrl + '/batches').replace(
         queryParameters: {
           if (_searchQuery.isNotEmpty) 'search': _searchQuery,
           if (_statusFilter != 'all')
@@ -110,7 +111,7 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:8000/api/batches/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/batches/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -171,7 +172,7 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://127.0.0.1:8000/api/batches/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/batches/$id'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -419,8 +420,8 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
                               final token = prefs.getString('auth_token');
 
                               final url = isEdit
-                                  ? 'http://127.0.0.1:8000/api/batches/${batch['id']}'
-                                  : 'http://127.0.0.1:8000/api/batches';
+                                  ? ApiConstants.baseUrl + '/batches/${batch['id']}'
+                                  : ApiConstants.baseUrl + '/batches';
 
                               final requestMethod = isEdit
                                   ? http.put

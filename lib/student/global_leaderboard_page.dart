@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/student_layout.dart';
 import '../core/utils/snackbar_helper.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class GlobalLeaderboardPage extends StatefulWidget {
   const GlobalLeaderboardPage({super.key});
@@ -29,7 +30,7 @@ class _GlobalLeaderboardPageState extends State<GlobalLeaderboardPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/leaderboard'),
+        Uri.parse(ApiConstants.baseUrl + '/leaderboard'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

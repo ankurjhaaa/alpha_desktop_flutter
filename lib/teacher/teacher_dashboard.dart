@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -47,28 +48,28 @@ class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
 
     try {
       final coursesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/courses'),
+        Uri.parse(ApiConstants.baseUrl + '/courses'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
       final batchesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/batches'),
+        Uri.parse(ApiConstants.baseUrl + '/batches'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
       final studentsRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/students'),
+        Uri.parse(ApiConstants.baseUrl + '/students'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
       );
       final mcqRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/mcq_papers'),
+        Uri.parse(ApiConstants.baseUrl + '/mcq_papers'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

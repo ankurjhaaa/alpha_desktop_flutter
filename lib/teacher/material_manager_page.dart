@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:alpha_desktop_flutter/core/utils/snackbar_helper.dart';
 import '../layout/teacher_layout.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class MaterialManagerPage extends StatefulWidget {
   const MaterialManagerPage({super.key});
@@ -36,7 +37,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
 
     try {
       final coursesRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/courses'),
+        Uri.parse(ApiConstants.baseUrl + '/courses'),
         headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
       );
       if (coursesRes.statusCode == 200) {
@@ -53,7 +54,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
   }
 
   Future<void> _fetchBatches(String token) async {
-    String url = 'http://127.0.0.1:8000/api/batches';
+    String url = ApiConstants.baseUrl + '/batches';
     if (_selectedCourseId != null) {
       url += '?course_id=$_selectedCourseId';
     }
@@ -75,7 +76,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
-    String url = 'http://127.0.0.1:8000/api/materials';
+    String url = ApiConstants.baseUrl + '/materials';
     if (_selectedBatchId != null) {
       url += '?batch_id=$_selectedBatchId';
     }
@@ -116,7 +117,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
 
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:8000/api/materials/$id'),
+        Uri.parse(ApiConstants.baseUrl + '/materials/$id'),
         headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
       );
 
@@ -240,7 +241,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
                                   if (newFile == null) {
                                     // Standard JSON PUT
                                     final response = await http.put(
-                                      Uri.parse('http://127.0.0.1:8000/api/materials/${material['id']}'),
+                                      Uri.parse(ApiConstants.baseUrl + '/materials/${material['id']}'),
                                       headers: {
                                         'Authorization': 'Bearer $token',
                                         'Accept': 'application/json',
@@ -262,7 +263,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
                                     }
                                   } else {
                                     // Multipart POST with _method=PUT
-                                    var request = http.MultipartRequest('POST', Uri.parse('http://127.0.0.1:8000/api/materials/${material['id']}'));
+                                    var request = http.MultipartRequest('POST', Uri.parse(ApiConstants.baseUrl + '/materials/${material['id']}'));
                                     request.headers['Authorization'] = 'Bearer $token';
                                     request.headers['Accept'] = 'application/json';
                                     
@@ -482,7 +483,7 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
                                 final token = prefs.getString('auth_token');
 
                                 try {
-                                  var request = http.MultipartRequest('POST', Uri.parse('http://127.0.0.1:8000/api/materials'));
+                                  var request = http.MultipartRequest('POST', Uri.parse(ApiConstants.baseUrl + '/materials'));
                                   request.headers['Authorization'] = 'Bearer $token';
                                   request.headers['Accept'] = 'application/json';
                                   

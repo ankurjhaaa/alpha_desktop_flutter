@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/student_layout.dart';
 import '../core/utils/snackbar_helper.dart';
 import 'exams_page.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -33,13 +34,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
     try {
       // Fetch profile (which includes batches)
       final profileRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/student/profile'),
+        Uri.parse(ApiConstants.baseUrl + '/student/profile'),
         headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
       );
 
       // Fetch exams
       final examsRes = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/student/exams'),
+        Uri.parse(ApiConstants.baseUrl + '/student/exams'),
         headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
       );
 

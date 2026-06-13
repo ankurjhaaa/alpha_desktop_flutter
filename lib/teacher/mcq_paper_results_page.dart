@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 import 'student_exam_answers_page.dart';
+import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class McqPaperResultsPage extends StatefulWidget {
   final int paperId;
@@ -35,7 +36,7 @@ class _McqPaperResultsPageState extends State<McqPaperResultsPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/api/mcq_papers/${widget.paperId}/results'),
+        Uri.parse(ApiConstants.baseUrl + '/mcq_papers/${widget.paperId}/results'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
