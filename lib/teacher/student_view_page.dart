@@ -362,9 +362,9 @@ class _StudentViewPageState extends State<StudentViewPage> {
                                     style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                                   ),
                                   if (_student!['registration_id'] != null) ...[
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 8),
                                     Text(
-                                      'Reg. ID: ${_student!['registration_id']}',
+                                      'Admission No: ${_student!['registration_id']}',
                                       style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
                                     ),
                                   ],

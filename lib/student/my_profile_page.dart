@@ -130,9 +130,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                     style: TextStyle(fontSize: 15, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                                   ),
                                   if (_profile!['registration_id'] != null) ...[
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 8),
                                     Text(
-                                      'Reg. ID: ${_profile!['registration_id']}',
+                                      'Admission No: ${_profile!['registration_id']}',
                                       style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
                                     ),
                                   ],

@@ -173,7 +173,7 @@ class _StudentLayoutState extends State<StudentLayout> {
     ];
 
     return Container(
-      width: 260,
+      width: 300,
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         border: Border(right: BorderSide(color: theme.dividerColor.withOpacity(0.1))),
@@ -181,18 +181,34 @@ class _StudentLayoutState extends State<StudentLayout> {
       child: Column(
         children: [
           Container(
-            height: 70,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 32),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.1))),
             ),
-            child: Row(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.school, size: 28, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.primary.withOpacity(0.05),
+                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 60, color: theme.colorScheme.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text(
-                  'Student Portal',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  'Alpha Graphics',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

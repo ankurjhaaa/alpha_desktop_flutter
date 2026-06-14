@@ -382,7 +382,7 @@ class _StudentsPageState extends State<StudentsPage> {
                           child: TextField(
                             controller: registrationIdController,
                             decoration: InputDecoration(
-                              labelText: 'Registration ID',
+                              labelText: 'Admission Number',
                               prefixIcon: const Icon(Icons.badge_outlined, size: 20),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

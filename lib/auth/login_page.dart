@@ -150,13 +150,21 @@ class _LoginPageState extends State<LoginPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withOpacity(0.1),
-              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+              color: theme.colorScheme.primary.withOpacity(0.05),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
             ),
-            child: Icon(Icons.computer, size: 48, color: theme.colorScheme.primary),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 80, color: theme.colorScheme.primary),
+              ),
+            ),
           ),
           const SizedBox(height: 32),
           Text(

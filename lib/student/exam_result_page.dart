@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'leaderboard_page.dart';
+import '../core/utils/pdf_helper.dart';
 
 class ExamResultPage extends StatefulWidget {
   final Map<String, dynamic> result;
@@ -167,7 +168,25 @@ class _ExamResultPageState extends State<ExamResultPage> {
                             child: const Text('Back to Exams', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              PdfHelper.generateExamResultPdf(
+                                context: context,
+                                paperTitle: widget.result['paper_title'] ?? 'Exam Result',
+                                resultData: widget.result,
+                              );
+                            },
+                            icon: const Icon(Icons.download, size: 18),
+                            label: const Text('Download', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
@@ -185,7 +204,7 @@ class _ExamResultPageState extends State<ExamResultPage> {
                               padding: const EdgeInsets.symmetric(vertical: 20),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text('View Leaderboard', style: TextStyle(fontWeight: FontWeight.bold)),
+                            child: const Text('Leaderboard', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],

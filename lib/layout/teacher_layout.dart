@@ -23,6 +23,25 @@ class TeacherLayout extends StatefulWidget {
 }
 
 class _TeacherLayoutState extends State<TeacherLayout> {
+  String _userName = 'Teacher';
+  String _userEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _userName = prefs.getString('user_name') ?? 'Teacher';
+        _userEmail = prefs.getString('user_email') ?? '';
+      });
+    }
+  }
+
   void _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
@@ -158,7 +177,7 @@ class _TeacherLayoutState extends State<TeacherLayout> {
     ];
 
     return Container(
-      width: 260,
+      width: 300,
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         border: Border(right: BorderSide(color: theme.dividerColor.withOpacity(0.1))),
@@ -166,18 +185,34 @@ class _TeacherLayoutState extends State<TeacherLayout> {
       child: Column(
         children: [
           Container(
-            height: 70,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 32),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.1))),
             ),
-            child: Row(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.computer, size: 28, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.primary.withOpacity(0.05),
+                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text(
-                  'Teacher Panel',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  'Alpha Graphics',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -196,7 +231,7 @@ class _TeacherLayoutState extends State<TeacherLayout> {
                   ),
                   child: Center(
                     child: Text(
-                      'T',
+                      _userName.isNotEmpty ? _userName[0].toUpperCase() : 'T',
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -210,13 +245,14 @@ class _TeacherLayoutState extends State<TeacherLayout> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Welcome Back,',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      Text(
+                        _userName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        widget.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        _userEmail.isNotEmpty ? _userEmail : 'Teacher Portal',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

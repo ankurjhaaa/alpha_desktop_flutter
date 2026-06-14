@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/teacher_layout.dart';
 import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
+import '../core/utils/pdf_helper.dart';
 
 class StudentExamAnswersPage extends StatefulWidget {
   final int paperId;
@@ -103,6 +104,24 @@ class _StudentExamAnswersPageState extends State<StudentExamAnswersPage> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              PdfHelper.generateExamResultPdf(
+                                context: context,
+                                paperTitle: 'Exam Result',
+                                studentName: widget.studentName,
+                                resultData: _result!,
+                                questions: _questions,
+                              );
+                            },
+                            icon: const Icon(Icons.picture_as_pdf),
+                            label: const Text('Download PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
                         ],
