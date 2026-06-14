@@ -11,6 +11,8 @@ import '../teacher/mcq_manager_page.dart';
 import '../teacher/material_manager_page.dart';
 import '../teacher/feedback_manager_page.dart';
 import '../teacher/global_leaderboard_page.dart';
+import '../teacher/settings_page.dart';
+import '../core/services/settings_service.dart';
 
 class TeacherLayout extends StatefulWidget {
   final Widget child;
@@ -25,11 +27,24 @@ class TeacherLayout extends StatefulWidget {
 class _TeacherLayoutState extends State<TeacherLayout> {
   String _userName = 'Teacher';
   String _userEmail = '';
+  String _companyName = 'Alpha Graphics';
+  String _logoUrl = '';
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    if (mounted) {
+      setState(() {
+        _companyName = settings['company_name'] ?? 'Alpha Graphics';
+        _logoUrl = settings['logo_url'] ?? '';
+      });
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -173,7 +188,7 @@ class _TeacherLayoutState extends State<TeacherLayout> {
       {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': title == 'Leaderboard', 'page': const TeacherGlobalLeaderboardPage()},
       {'title': 'Study Materials', 'icon': Icons.library_books_outlined, 'activeIcon': Icons.library_books, 'isActive': title == 'Study Materials', 'page': const MaterialManagerPage()},
       {'title': 'Student Feedbacks', 'icon': Icons.feedback_outlined, 'activeIcon': Icons.feedback, 'isActive': title == 'Student Feedbacks', 'page': const FeedbackManagerPage()},
-      {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': title == 'Settings', 'page': null},
+      {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': title == 'Settings', 'page': const SettingsPage()},
     ];
 
     return Container(
@@ -202,17 +217,23 @@ class _TeacherLayoutState extends State<TeacherLayout> {
                     border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
                   ),
                   child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
-                    ),
+                    child: _logoUrl.isNotEmpty 
+                      ? Image.network(
+                          _logoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/logo.png', fit: BoxFit.cover),
+                        )
+                      : Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
+                        ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Alpha Graphics',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                Text(
+                  _companyName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

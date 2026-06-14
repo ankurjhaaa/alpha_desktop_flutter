@@ -10,6 +10,7 @@ import '../student/leaderboard_page.dart';
 import '../student/global_leaderboard_page.dart';
 import '../student/materials_page.dart';
 import '../student/feedbacks_page.dart';
+import '../core/services/settings_service.dart';
 
 class StudentLayout extends StatefulWidget {
   final Widget child;
@@ -24,11 +25,24 @@ class StudentLayout extends StatefulWidget {
 class _StudentLayoutState extends State<StudentLayout> {
   String _userName = 'Student';
   String _userEmail = '';
+  String _companyName = 'Alpha Graphics';
+  String _logoUrl = '';
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await SettingsService.getSettings();
+    if (mounted) {
+      setState(() {
+        _companyName = settings['company_name'] ?? 'Alpha Graphics';
+        _logoUrl = settings['logo_url'] ?? '';
+      });
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -198,17 +212,23 @@ class _StudentLayoutState extends State<StudentLayout> {
                     border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
                   ),
                   child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 60, color: theme.colorScheme.primary),
-                    ),
+                    child: _logoUrl.isNotEmpty 
+                      ? Image.network(
+                          _logoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/logo.png', fit: BoxFit.cover),
+                        )
+                      : Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 60, color: theme.colorScheme.primary),
+                        ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Alpha Graphics',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                Text(
+                  _companyName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

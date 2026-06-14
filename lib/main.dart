@@ -5,12 +5,16 @@ import 'theme/app_theme.dart';
 import 'auth/login_page.dart';
 import 'teacher/teacher_dashboard.dart';
 import 'student/student_dashboard.dart';
+import 'core/services/settings_service.dart';
 
 final ThemeController themeController = ThemeController();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Fetch global settings
+  SettingsService.fetchAndCacheSettings();
+
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');
   final role = prefs.getString('user_role');

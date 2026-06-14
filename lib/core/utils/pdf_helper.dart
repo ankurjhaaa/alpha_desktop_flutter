@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'snackbar_helper.dart';
+import '../services/settings_service.dart';
+import 'package:http/http.dart' as http;
 
 class PdfHelper {
   static Future<void> generateExamResultPdf({
@@ -37,12 +39,38 @@ class PdfHelper {
       final String examDateRaw = resultData['created_at']?.toString() ?? DateTime.now().toString();
       final String examDate = examDateRaw.split('T')[0].split(' ')[0];
 
+      // Fetch global settings
+      final settings = await SettingsService.getSettings();
+      final String companyName = settings['company_name'] ?? 'ALPHA GRAPHICS';
+      final String companyAddress = settings['company_address'] ?? '';
+      final String companyPhone = settings['company_phone'] ?? '';
+      final String logoUrl = settings['logo_url'] ?? '';
+      final String signatureUrl = settings['signature_url'] ?? '';
+
       pw.MemoryImage? logoImage;
-      try {
-        final imageBytes = await rootBundle.load('assets/images/logo.png');
-        logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
-      } catch (e) {
-        // Fallback if logo cannot be loaded
+      if (logoUrl.isNotEmpty) {
+        try {
+          final response = await http.get(Uri.parse(logoUrl));
+          if (response.statusCode == 200) {
+            logoImage = pw.MemoryImage(response.bodyBytes);
+          }
+        } catch (_) {}
+      }
+      if (logoImage == null) {
+        try {
+          final imageBytes = await rootBundle.load('assets/images/logo.png');
+          logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
+        } catch (_) {}
+      }
+
+      pw.MemoryImage? signatureImage;
+      if (signatureUrl.isNotEmpty) {
+        try {
+          final response = await http.get(Uri.parse(signatureUrl));
+          if (response.statusCode == 200) {
+            signatureImage = pw.MemoryImage(response.bodyBytes);
+          }
+        } catch (_) {}
       }
 
       String finalStudentName = studentName 
@@ -101,7 +129,7 @@ class PdfHelper {
                       crossAxisAlignment: pw.CrossAxisAlignment.end,
                       children: [
                         pw.Text(
-                          'ALPHA GRAPHICS',
+                          companyName,
                           style: pw.TextStyle(
                             fontSize: 24,
                             fontWeight: pw.FontWeight.bold,
@@ -259,6 +287,13 @@ class PdfHelper {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
+                        if (signatureImage != null)
+                          pw.Container(
+                            height: 40,
+                            child: pw.Image(signatureImage),
+                          )
+                        else
+                          pw.SizedBox(height: 40),
                         pw.Container(width: 120, height: 1, color: PdfColors.grey400),
                         pw.SizedBox(height: 8),
                         pw.Text('Authorized Signature', style: pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
