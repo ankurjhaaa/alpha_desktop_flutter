@@ -342,10 +342,15 @@ class _StudentViewPageState extends State<StudentViewPage> {
                             CircleAvatar(
                               radius: 36,
                               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                              child: Text(
-                                _student!['name'][0].toUpperCase(),
-                                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
-                              ),
+                              backgroundImage: _student!['profile_image'] != null
+                                  ? NetworkImage(_student!['profile_image'])
+                                  : null,
+                              child: _student!['profile_image'] == null
+                                  ? Text(
+                                      _student!['name'][0].toUpperCase(),
+                                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 24),
                             Expanded(

@@ -272,9 +272,10 @@ class PdfHelper {
         ),
       );
 
-      // Sanitize title for filename
+      // Sanitize title and reg number for filename
       final safeTitle = paperTitle.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
-      final fileName = '${safeTitle}_Result.pdf';
+      final safeReg = finalAdmissionNo.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+      final fileName = '${safeTitle}_${safeReg}_Result.pdf';
 
       final FileSaveLocation? result = await getSaveLocation(
         suggestedName: fileName,
@@ -285,6 +286,29 @@ class PdfHelper {
 
       if (result != null) {
         final file = File(result.path);
+
+        // Check if file exists to prevent silent overwrite
+        if (await file.exists()) {
+          if (!context.mounted) return;
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('File Already Exists'),
+              content: Text('The file "${result.path.split('/').last}" already exists. Do you want to overwrite it?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  child: const Text('Overwrite'),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm != true) return; // User canceled
+        }
+
         await file.writeAsBytes(await pdf.save());
         if (context.mounted) {
           SnackbarHelper.showSuccess(context, 'PDF saved to ${result.path}');

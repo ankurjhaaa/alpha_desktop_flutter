@@ -58,7 +58,7 @@ class _TeacherGlobalLeaderboardPageState extends State<TeacherGlobalLeaderboardP
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return TeacherLayout(
-      title: 'Global Leaderboard',
+      title: 'Leaderboard',
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: _isLoading

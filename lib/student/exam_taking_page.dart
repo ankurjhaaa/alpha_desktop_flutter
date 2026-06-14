@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/utils/snackbar_helper.dart';
 import 'exam_result_page.dart';
@@ -9,11 +10,13 @@ import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 class ExamTakingPage extends StatefulWidget {
   final int paperId;
   final List<dynamic> questions;
+  final Map<String, dynamic>? examData;
 
   const ExamTakingPage({
     super.key,
     required this.paperId,
     required this.questions,
+    this.examData,
   });
 
   @override
@@ -26,21 +29,93 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
   bool _isSubmitting = false;
 
   int _currentIndex = 0;
+  
+  Timer? _timer;
+  Duration _remainingTime = Duration.zero;
+  bool _timerActive = false;
 
-  void _submitExam() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Submit Exam?'),
-        content: const Text('Are you sure you want to submit your answers? You cannot change them after submission.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Submit')),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+    _loadAnswersLocally();
+  }
 
-    if (confirm != true) return;
+  Future<void> _saveAnswersLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = jsonEncode(_answers.map((key, value) => MapEntry(key.toString(), value)));
+    await prefs.setString('exam_draft_${widget.paperId}', jsonStr);
+  }
+
+  Future<void> _loadAnswersLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('exam_draft_${widget.paperId}');
+    if (jsonStr != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(jsonStr);
+        setState(() {
+          for (var entry in decoded.entries) {
+            _answers[int.parse(entry.key)] = entry.value as String;
+          }
+        });
+      } catch (e) {
+        // Ignore JSON errors
+      }
+    }
+  }
+
+  Future<void> _clearAnswersLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('exam_draft_${widget.paperId}');
+  }
+
+  void _startTimer() {
+    if (widget.examData != null && widget.examData!['end_time'] != null) {
+      final endTimeStr = widget.examData!['end_time'] as String;
+      final endTime = DateTime.tryParse(endTimeStr);
+      if (endTime != null) {
+        _timerActive = true;
+        _remainingTime = endTime.difference(DateTime.now());
+        
+        if (_remainingTime.isNegative) {
+          _submitExam(autoSubmit: true);
+        } else {
+          _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+            setState(() {
+              _remainingTime = endTime.difference(DateTime.now());
+              if (_remainingTime.isNegative) {
+                timer.cancel();
+                _submitExam(autoSubmit: true);
+              }
+            });
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _submitExam({bool autoSubmit = false}) async {
+    if (!autoSubmit) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Submit Exam?'),
+          content: const Text('Are you sure you want to submit your answers? You cannot change them after submission.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Submit')),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -61,6 +136,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
+        await _clearAnswersLocally();
         final result = jsonDecode(response.body);
         if (mounted) {
           Navigator.pushReplacement(
@@ -94,12 +170,27 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Question ${_currentIndex + 1} of ${widget.questions.length}'),
-        centerTitle: true,
         automaticallyImplyLeading: false, // Prevent going back accidentally
+        title: _timerActive 
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.timer_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  '${_remainingTime.inHours.toString().padLeft(2, '0')}:${(_remainingTime.inMinutes % 60).toString().padLeft(2, '0')}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    color: _remainingTime.inMinutes < 5 ? Colors.redAccent : null,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            )
+          : Text('Question ${_currentIndex + 1} of ${widget.questions.length}'),
+        centerTitle: true,
         actions: [
           TextButton(
-            onPressed: _isSubmitting ? null : _submitExam,
+            onPressed: _isSubmitting ? null : () => _submitExam(),
             child: const Text('Finish', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -118,10 +209,11 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                 ),
               ),
               child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
                     child: Container(
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
@@ -186,6 +278,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                                   setState(() {
                                     _answers[qId] = optionLetter;
                                   });
+                                  _saveAnswersLocally();
                                 },
                                 borderRadius: BorderRadius.circular(16),
                                 child: AnimatedContainer(
@@ -249,7 +342,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                               ),
                             );
                           }),
-                          const Spacer(),
+                          const SizedBox(height: 32),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -298,6 +391,7 @@ class _ExamTakingPageState extends State<ExamTakingPage> {
                 ),
               ),
             ),
+          ),
     );
   }
 }

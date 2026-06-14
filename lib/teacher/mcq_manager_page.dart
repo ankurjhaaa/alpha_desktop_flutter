@@ -216,6 +216,15 @@ class _McqManagerPageState extends State<McqManagerPage> {
     final passwordController = TextEditingController(
       text: isEdit ? (paper['exam_password'] ?? '') : '',
     );
+    final startTimeController = TextEditingController(
+      text: isEdit ? (paper['start_time'] ?? '') : '',
+    );
+    final endTimeController = TextEditingController(
+      text: isEdit ? (paper['end_time'] ?? '') : '',
+    );
+    final invigilatorsController = TextEditingController(
+      text: isEdit ? (paper['invigilators'] ?? '') : '',
+    );
     int? selectedBatchId = isEdit
         ? paper['batch_id']
         : (_batches.isNotEmpty ? _batches.first['id'] : null);
@@ -378,6 +387,91 @@ class _McqManagerPageState extends State<McqManagerPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: startTimeController,
+                            readOnly: true,
+                            onTap: () async {
+                              final pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2101),
+                              );
+                              if (pickedDate != null) {
+                                final pickedTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (pickedTime != null) {
+                                  final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+                                  setModalState(() {
+                                    startTimeController.text = "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
+                                  });
+                                }
+                              }
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Start Time (Optional)',
+                              suffixIcon: const Icon(Icons.access_time),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            controller: endTimeController,
+                            readOnly: true,
+                            onTap: () async {
+                              final pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2101),
+                              );
+                              if (pickedDate != null) {
+                                final pickedTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay.now(),
+                                );
+                                if (pickedTime != null) {
+                                  final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+                                  setModalState(() {
+                                    endTimeController.text = "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
+                                  });
+                                }
+                              }
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'End Time (Optional)',
+                              suffixIcon: const Icon(Icons.access_time),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: invigilatorsController,
+                      decoration: InputDecoration(
+                        labelText: 'Invigilators (Comma separated names)',
+                        prefixIcon: const Icon(Icons.people_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Theme(
                       data: Theme.of(context).copyWith(
                         splashColor: Colors.transparent,
@@ -456,9 +550,12 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                     'batch_id': selectedBatchId,
                                     'title': titleController.text,
                                     'description': descController.text,
-                                    'is_active': isActive,
-                                    'exam_date': dateController.text.isNotEmpty ? dateController.text : null,
-                                    'exam_password': passwordController.text.isNotEmpty ? passwordController.text : null,
+                                    'exam_date': dateController.text.isEmpty ? null : dateController.text,
+                                    'exam_password': passwordController.text.isEmpty ? null : passwordController.text,
+                                    'start_time': startTimeController.text.isEmpty ? null : startTimeController.text,
+                                    'end_time': endTimeController.text.isEmpty ? null : endTimeController.text,
+                                    'invigilators': invigilatorsController.text.isEmpty ? null : invigilatorsController.text,
+                                    'is_active': isActive ? 1 : 0,
                                   }),
                                 );
 

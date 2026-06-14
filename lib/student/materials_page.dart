@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../layout/student_layout.dart';
 import 'package:alpha_desktop_flutter/core/utils/snackbar_helper.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import '../layout/student_layout.dart';
 import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
 
 class MaterialsPage extends StatefulWidget {
@@ -63,49 +64,100 @@ class _MaterialsPageState extends State<MaterialsPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+  void _showPdfFullScreen(String url, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        insetPadding: const EdgeInsets.all(24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                child: SfPdfViewer.network(
+                  url,
+                  canShowScrollHead: false,
+                  canShowScrollStatus: false,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showImageFullScreen(String url, String title) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         insetPadding: const EdgeInsets.all(24),
-        child: Stack(
-          alignment: Alignment.center,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
           children: [
-            InteractiveViewer(
-              panEnabled: true,
-              boundaryMargin: const EdgeInsets.all(20),
-              minScale: 0.5,
-              maxScale: 4,
-              child: Image.network(
-                url,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(child: CircularProgressIndicator(color: Colors.white));
-                },
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
             ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 32),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            Positioned(
-              bottom: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                child: InteractiveViewer(
+                  panEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 0.5,
+                  maxScale: 4,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  ),
                 ),
               ),
             ),
@@ -269,9 +321,7 @@ class _MaterialsPageState extends State<MaterialsPage> {
                             child: InkWell(
                               onTap: isImage
                                   ? () => _showImageFullScreen(material['file_url'], material['title'])
-                                  : () {
-                                      SnackbarHelper.showSuccess(context, 'Document opened (Simulated)');
-                                    },
+                                  : () => _showPdfFullScreen(material['file_url'], material['title']),
                               borderRadius: BorderRadius.circular(12),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,

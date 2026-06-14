@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:alpha_desktop_flutter/core/utils/snackbar_helper.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_selector/file_selector.dart';
 import '../layout/teacher_layout.dart';
 import 'student_view_page.dart';
 import 'package:alpha_desktop_flutter/core/constants/api_constants.dart';
@@ -235,6 +237,8 @@ class _StudentsPageState extends State<StudentsPage> {
     bool isActive = isEdit
         ? (student['is_active'] == 1 || student['is_active'] == true)
         : true;
+    XFile? selectedImage;
+    Uint8List? selectedImageBytes;
 
     showDialog(
       context: context,
@@ -300,6 +304,50 @@ class _StudentsPageState extends State<StudentsPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    Center(
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            backgroundImage: selectedImageBytes != null
+                                ? MemoryImage(selectedImageBytes!)
+                                : (isEdit && student['profile_image'] != null
+                                    ? NetworkImage(student['profile_image']) as ImageProvider
+                                    : null),
+                            child: selectedImageBytes == null && (!isEdit || student['profile_image'] == null)
+                                ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: InkWell(
+                              onTap: () async {
+                                final typeGroup = const XTypeGroup(
+                                  label: 'images',
+                                  extensions: ['jpg', 'png', 'jpeg'],
+                                );
+                                final result = await openFile(acceptedTypeGroups: [typeGroup]);
+                                if (result != null) {
+                                  final bytes = await result.readAsBytes();
+                                  setModalState(() {
+                                    selectedImage = result;
+                                    selectedImageBytes = bytes;
+                                  });
+                                }
+                              },
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     TextField(
                       controller: emailController,
                       decoration: InputDecoration(
@@ -540,7 +588,7 @@ class _StudentsPageState extends State<StudentsPage> {
                               final Map<String, dynamic> bodyData = {
                                 'name': nameController.text,
                                 'email': emailController.text,
-                                'is_active': isActive,
+                                'is_active': isActive ? '1' : '0',
                                 'father_name': fatherNameController.text.isEmpty ? null : fatherNameController.text,
                                 'phone': phoneController.text.isEmpty ? null : phoneController.text,
                                 'registration_id': registrationIdController.text.isEmpty ? null : registrationIdController.text,
@@ -554,18 +602,38 @@ class _StudentsPageState extends State<StudentsPage> {
                               }
 
                               try {
-                                final response = await requestMethod(
+                                var request = http.MultipartRequest(
+                                  isEdit ? 'POST' : 'POST',
                                   Uri.parse(url),
-                                  headers: {
-                                    'Authorization': 'Bearer $token',
-                                    'Accept': 'application/json',
-                                    'Content-Type': 'application/json',
-                                  },
-                                  body: jsonEncode(bodyData),
                                 );
+                                
+                                request.headers['Authorization'] = 'Bearer $token';
+                                request.headers['Accept'] = 'application/json';
 
-                                if (response.statusCode == 201 ||
-                                    response.statusCode == 200) {
+                                if (isEdit) {
+                                  request.fields['_method'] = 'PUT';
+                                }
+
+                                bodyData.forEach((key, value) {
+                                  if (value != null) {
+                                    request.fields[key] = value.toString();
+                                  }
+                                });
+
+                                if (selectedImageBytes != null) {
+                                  request.files.add(
+                                    http.MultipartFile.fromBytes(
+                                      'profile_image',
+                                      selectedImageBytes!,
+                                      filename: selectedImage!.name,
+                                    ),
+                                  );
+                                }
+
+                                final streamedResponse = await request.send();
+                                final response = await http.Response.fromStream(streamedResponse);
+
+                                if (response.statusCode == 201 || response.statusCode == 200) {
                                   if (mounted) Navigator.pop(context);
                                   _fetchData();
                                   SnackbarHelper.showSuccess(
@@ -906,16 +974,21 @@ class _StudentsPageState extends State<StudentsPage> {
                                                   .colorScheme
                                                   .primary
                                                   .withOpacity(0.1),
-                                              child: Text(
-                                                student['name'][0]
-                                                    .toUpperCase(),
-                                                style: TextStyle(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                                  fontSize: 10,
-                                                ),
-                                              ),
+                                              backgroundImage: student['profile_image'] != null
+                                                  ? NetworkImage(student['profile_image'])
+                                                  : null,
+                                              child: student['profile_image'] == null
+                                                  ? Text(
+                                                      student['name'][0]
+                                                          .toUpperCase(),
+                                                      style: TextStyle(
+                                                        color: Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                        fontSize: 10,
+                                                      ),
+                                                    )
+                                                  : null,
                                             ),
                                             const SizedBox(width: 8),
                                             Text(

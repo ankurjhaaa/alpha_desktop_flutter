@@ -56,6 +56,57 @@ class _McqPaperResultsPageState extends State<McqPaperResultsPage> {
     }
   }
 
+  Future<void> _revokeResult(int userId, String studentName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Revoke Result?'),
+        content: Text('Are you sure you want to delete the exam result for $studentName? They will be able to take the exam again.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    try {
+      final response = await http.delete(
+        Uri.parse(ApiConstants.baseUrl + '/mcq_papers/${widget.paperId}/results/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Result revoked successfully')));
+        }
+        _fetchResults();
+      } else {
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to revoke result')));
+        }
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Network Error')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -210,7 +261,15 @@ class _McqPaperResultsPageState extends State<McqPaperResultsPage> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 24),
+                                  const SizedBox(width: 16),
+                                  Tooltip(
+                                    message: 'Revoke Exam Result',
+                                    child: IconButton(
+                                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                                      onPressed: () => _revokeResult(result['user_id'], result['student_name']),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   ElevatedButton(
                                     onPressed: () {
                                       Navigator.push(

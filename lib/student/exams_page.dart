@@ -90,7 +90,14 @@ class _ExamsPageState extends State<ExamsPage> {
     }
 
     // Check date
-    if (exam['exam_date'] != null) {
+    // Check date and time constraints
+    if (exam['start_time'] != null) {
+      final startTime = DateTime.parse(exam['start_time'] as String).toLocal();
+      if (DateTime.now().isBefore(startTime)) {
+        SnackbarHelper.showError(context, 'This exam is locked until ${startTime.toString().substring(0, 16)}');
+        return;
+      }
+    } else if (exam['exam_date'] != null) {
       final today = DateTime.now();
       final examDateStr = exam['exam_date'] as String;
       final examDate = DateTime.parse(examDateStr);
@@ -104,10 +111,18 @@ class _ExamsPageState extends State<ExamsPage> {
       }
     }
 
+    if (exam['end_time'] != null) {
+      final endTime = DateTime.parse(exam['end_time'] as String).toLocal();
+      if (DateTime.now().isAfter(endTime)) {
+        SnackbarHelper.showError(context, 'This exam has already ended.');
+        return;
+      }
+    }
+
     if (exam['requires_password']) {
       _showPasswordDialog(exam);
     } else {
-      _startExam(exam['id']);
+      _startExam(exam);
     }
   }
 
@@ -180,7 +195,7 @@ class _ExamsPageState extends State<ExamsPage> {
                           if (context.mounted) {
                             Navigator.pop(context);
                             final data = jsonDecode(response.body);
-                            _navigateToExam(exam['id'], data['questions']);
+                            _navigateToExam(exam, data['questions']);
                           }
                         } else {
                           if (context.mounted) SnackbarHelper.showError(context, 'Invalid Password');
@@ -204,12 +219,12 @@ class _ExamsPageState extends State<ExamsPage> {
     );
   }
 
-  Future<void> _startExam(int id) async {
+  Future<void> _startExam(Map<String, dynamic> exam) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     try {
       final response = await http.post(
-        Uri.parse(ApiConstants.baseUrl + '/student/exams/$id/verify'),
+        Uri.parse(ApiConstants.baseUrl + '/student/exams/${exam['id']}/verify'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -219,7 +234,7 @@ class _ExamsPageState extends State<ExamsPage> {
       if (response.statusCode == 200) {
         if (mounted) {
           final data = jsonDecode(response.body);
-          _navigateToExam(id, data['questions']);
+          _navigateToExam(exam, data['questions']);
         }
       } else {
         if (mounted) SnackbarHelper.showError(context, 'Failed to start exam.');
@@ -229,13 +244,14 @@ class _ExamsPageState extends State<ExamsPage> {
     }
   }
 
-  void _navigateToExam(int paperId, List<dynamic> questions) {
+  void _navigateToExam(Map<String, dynamic> exam, List<dynamic> questions) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ExamTakingPage(
-          paperId: paperId,
+          paperId: exam['id'],
           questions: questions,
+          examData: exam,
         ),
       ),
     ).then((_) => _fetchExams()); // refresh on return
