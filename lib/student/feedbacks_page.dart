@@ -328,16 +328,7 @@ class _FeedbacksPageState extends State<FeedbacksPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'My Feedbacks',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'View all the feedbacks you have submitted.',
-                      style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                    ),
-                    const SizedBox(height: 24),
+
                     if (_feedbacks.isEmpty)
                       const Expanded(child: Center(child: Text('No feedbacks submitted yet.')))
                     else

@@ -89,27 +89,7 @@ class _ExamsPageState extends State<ExamsPage> {
       return;
     }
 
-    // Check date
-    // Check date and time constraints
-    if (exam['start_time'] != null) {
-      final startTime = DateTime.parse(exam['start_time'] as String).toLocal();
-      if (DateTime.now().isBefore(startTime)) {
-        SnackbarHelper.showError(context, 'This exam is locked until ${startTime.toString().substring(0, 16)}');
-        return;
-      }
-    } else if (exam['exam_date'] != null) {
-      final today = DateTime.now();
-      final examDateStr = exam['exam_date'] as String;
-      final examDate = DateTime.parse(examDateStr);
-      
-      final todayMidnight = DateTime(today.year, today.month, today.day);
-      final examMidnight = DateTime(examDate.year, examDate.month, examDate.day);
 
-      if (todayMidnight.isBefore(examMidnight)) {
-        SnackbarHelper.showError(context, 'This exam is locked until $examDateStr');
-        return;
-      }
-    }
 
     if (exam['end_time'] != null) {
       final endTime = DateTime.parse(exam['end_time'] as String).toLocal();
@@ -296,76 +276,60 @@ class _ExamsPageState extends State<ExamsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Available Exams',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Unlock and complete your pending exams.',
-                          style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                        ),
-                        const SizedBox(height: 32),
-                        
                         // Filter Tabs & Search
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    ...['All', 'Pending', 'Completed'].map((status) {
-                                      final isSelected = _selectedStatus == status;
-                                      return Padding(
-                                        padding: const EdgeInsets.only(right: 12.0),
-                                        child: ChoiceChip(
-                                          label: Text(status),
-                                          selected: isSelected,
-                                          selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                          onSelected: (selected) {
-                                            if (selected) {
-                                              setState(() => _selectedStatus = status);
-                                            }
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                    Container(width: 1, height: 24, color: Colors.grey.withOpacity(0.3), margin: const EdgeInsets.symmetric(horizontal: 8)),
-                                    ..._uniqueBatches.map((batchName) {
-                                      final isSelected = _selectedBatch == batchName;
-                                      return Padding(
-                                        padding: const EdgeInsets.only(left: 12.0),
-                                        child: ChoiceChip(
-                                          label: Text(batchName),
-                                          selected: isSelected,
-                                          onSelected: (selected) {
-                                            if (selected) {
-                                              setState(() => _selectedBatch = batchName);
-                                            }
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            SizedBox(
-                              width: 300,
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isMobile = constraints.maxWidth < 800;
+
+                            final filterChips = Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                ...['All', 'Pending', 'Completed'].map((status) {
+                                  final isSelected = _selectedStatus == status;
+                                  return ChoiceChip(
+                                    label: Text(status),
+                                    selected: isSelected,
+                                    selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        setState(() => _selectedStatus = status);
+                                      }
+                                    },
+                                  );
+                                }).toList(),
+                                if (!isMobile)
+                                  Container(width: 1, height: 24, color: Colors.grey.withOpacity(0.3), margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4)),
+                                ..._uniqueBatches.map((batchName) {
+                                  final isSelected = _selectedBatch == batchName;
+                                  return ChoiceChip(
+                                    label: Text(batchName),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        setState(() => _selectedBatch = batchName);
+                                      }
+                                    },
+                                  );
+                                }).toList(),
+                              ],
+                            );
+
+                            final searchBox = SizedBox(
+                              height: 48,
                               child: TextField(
                                 decoration: InputDecoration(
                                   hintText: 'Search exams...',
                                   prefixIcon: const Icon(Icons.search),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(30),
+                                    borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(30),
+                                    borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                                   ),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                                   filled: true,
                                   fillColor: Theme.of(context).colorScheme.surface,
                                 ),
@@ -373,10 +337,29 @@ class _ExamsPageState extends State<ExamsPage> {
                                   setState(() => _searchQuery = val.toLowerCase());
                                 },
                               ),
-                            ),
-                          ],
+                            );
+
+                            if (isMobile) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  filterChips,
+                                  const SizedBox(height: 16),
+                                  searchBox,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              children: [
+                                Expanded(flex: 3, child: filterChips),
+                                const SizedBox(width: 16),
+                                Expanded(flex: 1, child: searchBox),
+                              ],
+                            );
+                          },
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
                         
                         if (filteredExams.isEmpty)
                           Center(
@@ -426,14 +409,7 @@ class _ExamsPageState extends State<ExamsPage> {
   Widget _buildExamCard(Map<String, dynamic> exam, ThemeData theme) {
     final isCompleted = exam['is_completed'] == true;
     
-    bool isLocked = false;
-    if (!isCompleted && exam['exam_date'] != null) {
-      final today = DateTime.now();
-      final examDate = DateTime.parse(exam['exam_date']);
-      final todayMidnight = DateTime(today.year, today.month, today.day);
-      final examMidnight = DateTime(examDate.year, examDate.month, examDate.day);
-      isLocked = todayMidnight.isBefore(examMidnight);
-    }
+
 
     return Container(
       decoration: BoxDecoration(
@@ -461,19 +437,19 @@ class _ExamsPageState extends State<ExamsPage> {
                   decoration: BoxDecoration(
                     color: isCompleted 
                         ? Colors.green.withOpacity(0.1) 
-                        : (isLocked ? Colors.red.withOpacity(0.1) : Colors.blue.withOpacity(0.1)),
+                        : Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    isCompleted ? 'Completed' : (isLocked ? 'Locked' : 'Available'),
+                    isCompleted ? 'Completed' : 'Available',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isCompleted ? Colors.green : (isLocked ? Colors.red : Colors.blue),
+                      color: isCompleted ? Colors.green : Colors.blue,
                     ),
                   ),
                 ),
-                if (exam['requires_password'] && !isCompleted && !isLocked)
+                if (exam['requires_password'] && !isCompleted)
                   Icon(Icons.lock, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.5)),
               ],
             ),
@@ -601,9 +577,9 @@ class _ExamsPageState extends State<ExamsPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    isLocked ? 'Locked' : 'Start Exam',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  child: const Text(
+                    'Start Exam',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

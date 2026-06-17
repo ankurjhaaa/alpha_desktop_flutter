@@ -113,6 +113,7 @@ class _McqPaperResultsPageState extends State<McqPaperResultsPage> {
 
     return TeacherLayout(
       title: 'Results: ${widget.paperTitle}',
+      onBackPressed: () => Navigator.pop(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -120,11 +121,6 @@ class _McqPaperResultsPageState extends State<McqPaperResultsPage> {
             padding: const EdgeInsets.all(32.0),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

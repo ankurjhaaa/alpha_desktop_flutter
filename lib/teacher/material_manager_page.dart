@@ -590,45 +590,20 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(32.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Study Materials Management',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Upload and manage study materials for your batches.',
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: _showUploadModal,
-                  icon: const Icon(Icons.cloud_upload),
-                  label: const Text('Upload Material'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Row(
-              children: [
-                Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 800;
+
+                final courseFilter = SizedBox(
+                  height: 48,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _selectedCourseId,
-                    decoration: const InputDecoration(labelText: 'Filter by Course', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                      hintText: 'Filter by Course',
+                    ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Courses')),
                       ..._courses.map((c) => DropdownMenuItem(value: c['id'].toString(), child: Text(c['name']))),
@@ -644,12 +619,18 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
                       _fetchData();
                     },
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
+                );
+
+                final batchFilter = SizedBox(
+                  height: 48,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _selectedBatchId,
-                    decoration: const InputDecoration(labelText: 'Filter by Batch', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                      hintText: 'Filter by Batch',
+                    ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All Batches')),
                       ..._batches.map((b) => DropdownMenuItem(value: b['id'].toString(), child: Text(b['name']))),
@@ -659,36 +640,66 @@ class _MaterialManagerPageState extends State<MaterialManagerPage> {
                       _fetchData();
                     },
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16),
-            child: Row(
-              children: [
-                Expanded(
+                );
+
+                final searchBox = SizedBox(
+                  height: 48,
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search materials by title or description...',
+                      hintText: 'Search materials...',
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                     ),
                     onChanged: (val) {
                       setState(() => _searchQuery = val.toLowerCase());
                     },
                   ),
-                ),
-              ],
+                );
+
+                final actionBtn = SizedBox(
+                  height: 48,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: ElevatedButton.icon(
+                      onPressed: _showUploadModal,
+                      icon: const Icon(Icons.cloud_upload),
+                      label: const Text('Upload Material'),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                      ),
+                    ),
+                  ),
+                );
+
+                if (isMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      courseFilter,
+                      const SizedBox(height: 16),
+                      batchFilter,
+                      const SizedBox(height: 16),
+                      searchBox,
+                      const SizedBox(height: 16),
+                      actionBtn,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(flex: 1, child: courseFilter),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 1, child: batchFilter),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 2, child: searchBox),
+                    const SizedBox(width: 16),
+                    actionBtn,
+                  ],
+                );
+              },
             ),
           ),
           Expanded(

@@ -105,16 +105,7 @@ class _FeedbackManagerPageState extends State<FeedbackManagerPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Student Feedbacks',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Manage and review all feedbacks submitted by students.',
-                      style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                    ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
                     if (_feedbacks.isEmpty)
                       const Expanded(child: Center(child: Text('No feedbacks available.')))
                     else

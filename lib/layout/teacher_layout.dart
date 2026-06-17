@@ -11,14 +11,13 @@ import '../teacher/mcq_manager_page.dart';
 import '../teacher/material_manager_page.dart';
 import '../teacher/feedback_manager_page.dart';
 import '../teacher/global_leaderboard_page.dart';
-import '../teacher/settings_page.dart';
-import '../core/services/settings_service.dart';
 
 class TeacherLayout extends StatefulWidget {
   final Widget child;
   final String title;
+  final VoidCallback? onBackPressed;
 
-  const TeacherLayout({super.key, required this.child, required this.title});
+  const TeacherLayout({super.key, required this.child, required this.title, this.onBackPressed});
 
   @override
   State<TeacherLayout> createState() => _TeacherLayoutState();
@@ -27,24 +26,11 @@ class TeacherLayout extends StatefulWidget {
 class _TeacherLayoutState extends State<TeacherLayout> {
   String _userName = 'Teacher';
   String _userEmail = '';
-  String _companyName = 'Alpha Graphics';
-  String _logoUrl = '';
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final settings = await SettingsService.getSettings();
-    if (mounted) {
-      setState(() {
-        _companyName = settings['company_name'] ?? 'Alpha Graphics';
-        _logoUrl = settings['logo_url'] ?? '';
-      });
-    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -87,14 +73,26 @@ class _TeacherLayoutState extends State<TeacherLayout> {
           ),
           child: Row(
             children: [
-              if (!isDesktop)
+              if (widget.onBackPressed != null)
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: widget.onBackPressed,
+                )
+              else if (!isDesktop)
                 IconButton(
                   icon: const Icon(Icons.menu),
                   onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
-              Text(
-                widget.title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              if (widget.onBackPressed != null && !isDesktop)
+                const SizedBox(width: 8)
+              else if (widget.onBackPressed != null)
+                const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const Spacer(),
               ThemeToggleButton(controller: themeController),
@@ -185,10 +183,9 @@ class _TeacherLayoutState extends State<TeacherLayout> {
       {'title': 'Batches', 'icon': Icons.layers_outlined, 'activeIcon': Icons.layers, 'isActive': title == 'Batches', 'page': const BatchManagerPage()},
       {'title': 'Students', 'icon': Icons.people_outline, 'activeIcon': Icons.people, 'isActive': title == 'Students', 'page': const StudentsPage()},
       {'title': 'MCQ Papers', 'icon': Icons.assignment_outlined, 'activeIcon': Icons.assignment, 'isActive': title == 'MCQ Papers', 'page': const McqManagerPage()},
-      {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': title == 'Leaderboard', 'page': const TeacherGlobalLeaderboardPage()},
+      {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': title.contains('Leaderboard'), 'page': const TeacherGlobalLeaderboardPage()},
       {'title': 'Study Materials', 'icon': Icons.library_books_outlined, 'activeIcon': Icons.library_books, 'isActive': title == 'Study Materials', 'page': const MaterialManagerPage()},
       {'title': 'Student Feedbacks', 'icon': Icons.feedback_outlined, 'activeIcon': Icons.feedback, 'isActive': title == 'Student Feedbacks', 'page': const FeedbackManagerPage()},
-      {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': title == 'Settings', 'page': const SettingsPage()},
     ];
 
     return Container(
@@ -209,31 +206,32 @@ class _TeacherLayoutState extends State<TeacherLayout> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 140,
-                  height: 140,
+                  width: 160,
+                  height: 160,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: theme.colorScheme.primary.withOpacity(0.05),
-                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+                    color: theme.colorScheme.surface,
+                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1), width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: ClipOval(
-                    child: _logoUrl.isNotEmpty 
-                      ? Image.network(
-                          _logoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/logo.png', fit: BoxFit.cover),
-                        )
-                      : Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
-                        ),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  _companyName,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                const Text(
+                  'Alpha Graphics',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

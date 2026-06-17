@@ -177,24 +177,8 @@ class _MaterialsPageState extends State<MaterialsPage> {
           Padding(
             padding: const EdgeInsets.all(32.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'My Study Materials',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Materials shared by your teachers for your batches.',
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                      ),
-                    ],
-                  ),
-                ),
                 ElevatedButton.icon(
                   onPressed: _fetchMaterials,
                   icon: const Icon(Icons.refresh),
@@ -211,45 +195,42 @@ class _MaterialsPageState extends State<MaterialsPage> {
           // Filter Tabs & Search
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _uniqueBatches.map((batchName) {
-                        final isSelected = _selectedBatch == batchName;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12.0),
-                          child: ChoiceChip(
-                            label: Text(batchName),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => _selectedBatch = batchName);
-                              }
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                SizedBox(
-                  width: 300,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 800;
+
+                final filterChips = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _uniqueBatches.map((batchName) {
+                    final isSelected = _selectedBatch == batchName;
+                    return ChoiceChip(
+                      label: Text(batchName),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedBatch = batchName);
+                        }
+                      },
+                    );
+                  }).toList(),
+                );
+
+                final searchBox = SizedBox(
+                  height: 48,
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Search materials...',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surface,
                     ),
@@ -257,8 +238,28 @@ class _MaterialsPageState extends State<MaterialsPage> {
                       setState(() => _searchQuery = val.toLowerCase());
                     },
                   ),
-                ),
-              ],
+                );
+
+                if (isMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      filterChips,
+                      const SizedBox(height: 16),
+                      searchBox,
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(flex: 3, child: filterChips),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 1, child: searchBox),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),

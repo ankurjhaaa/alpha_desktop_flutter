@@ -94,8 +94,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('My Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 24),
+
 
                       // Profile Header
                       Container(

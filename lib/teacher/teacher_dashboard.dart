@@ -29,8 +29,8 @@ class _TeacherDashboardContent extends StatefulWidget {
 class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
   bool _isLoading = true;
   int _totalStudents = 0;
-  int _activeCourses = 0;
-  int _activeBatches = 0;
+  int _totalCourses = 0;
+  int _totalBatches = 0;
   int _totalMcqPapers = 0;
   List<dynamic> _recentStudents = [];
   List<dynamic> _upcomingBatches = [];
@@ -86,12 +86,8 @@ class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
         final mcqs = jsonDecode(mcqRes.body) as List;
 
         setState(() {
-          _activeCourses = courses
-              .where((c) => c['is_active'] == 1 || c['is_active'] == true)
-              .length;
-          _activeBatches = batches
-              .where((b) => b['is_active'] == 1 || b['is_active'] == true)
-              .length;
+          _totalCourses = courses.length;
+          _totalBatches = batches.length;
           _totalStudents = students.length;
           _totalMcqPapers = mcqs.length;
 
@@ -123,32 +119,8 @@ class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Welcome back, Teacher!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Here is your live summary for today.',
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
               MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: ElevatedButton.icon(
@@ -193,8 +165,8 @@ class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
                     width: width,
                     child: _buildStatCard(
                       context,
-                      'Active Courses',
-                      _activeCourses.toString(),
+                      'Total Courses',
+                      _totalCourses.toString(),
                       Icons.class_,
                       Colors.green,
                     ),
@@ -203,8 +175,8 @@ class _TeacherDashboardContentState extends State<_TeacherDashboardContent> {
                     width: width,
                     child: _buildStatCard(
                       context,
-                      'Active Batches',
-                      _activeBatches.toString(),
+                      'Total Batches',
+                      _totalBatches.toString(),
                       Icons.group_work,
                       Colors.orange,
                     ),

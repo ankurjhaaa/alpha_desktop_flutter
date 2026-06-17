@@ -67,6 +67,7 @@ class _StudentExamAnswersPageState extends State<StudentExamAnswersPage> {
 
     return TeacherLayout(
       title: '${widget.studentName}\'s Attempt',
+      onBackPressed: () => Navigator.pop(context),
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _result == null
@@ -79,11 +80,6 @@ class _StudentExamAnswersPageState extends State<StudentExamAnswersPage> {
                       // Header
                       Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

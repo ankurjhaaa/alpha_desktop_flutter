@@ -19,7 +19,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
   List<dynamic> _questions = [];
   bool _isLoading = true;
   String _searchQuery = '';
-  String _statusFilter = 'all';
 
   @override
   void initState() {
@@ -37,8 +36,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
         queryParameters: {
           'mcq_paper_id': widget.paper['id'].toString(),
           if (_searchQuery.isNotEmpty) 'search': _searchQuery,
-          if (_statusFilter != 'all')
-            'is_active': _statusFilter == 'active' ? 'true' : 'false',
         },
       );
 
@@ -125,67 +122,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
     }
   }
 
-  Future<void> _toggleStatus(int id, bool currentStatus) async {
-    final actionText = currentStatus ? 'Deactivate' : 'Activate';
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: Text('Confirm $actionText'),
-        content: Text(
-          'Are you sure you want to ${actionText.toLowerCase()} this question?',
-        ),
-        actions: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-          ),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(
-                foregroundColor: currentStatus ? Colors.red : Colors.green,
-              ),
-              child: Text(actionText),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-
-    try {
-      final response = await http.put(
-        Uri.parse(ApiConstants.baseUrl + '/mcq_questions/$id'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'is_active': !currentStatus}),
-      );
-
-      if (response.statusCode == 200) {
-        _fetchQuestions();
-        SnackbarHelper.showSuccess(
-          context,
-          'Question ${currentStatus ? 'deactivated' : 'activated'} successfully.',
-        );
-      } else {
-        SnackbarHelper.showError(context, 'Failed to update status.');
-      }
-    } catch (e) {
-      SnackbarHelper.showError(context, 'Network error while updating status.');
-    }
-  }
 
   void _showQuestionModal({Map<String, dynamic>? question}) {
     final isEdit = question != null;
@@ -205,9 +141,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
       text: isEdit ? question['option_d'] : '',
     );
     String selectedOption = isEdit ? question['correct_option'] : 'a';
-    bool isActive = isEdit
-        ? (question['is_active'] == 1 || question['is_active'] == true)
-        : true;
 
     showDialog(
       context: context,
@@ -342,25 +275,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                           setModalState(() => selectedOption = val);
                       },
                     ),
-                    const SizedBox(height: 16),
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        hoverColor: Colors.transparent,
-                      ),
-                      child: SwitchListTile(
-                        title: const Text('Is Active'),
-                        value: isActive,
-                        onChanged: (val) {
-                          setModalState(() {
-                            isActive = val;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -424,7 +338,7 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                                     'option_c': optionCController.text,
                                     'option_d': optionDController.text,
                                     'correct_option': selectedOption,
-                                    'is_active': isActive,
+                                    'is_active': true,
                                   }),
                                 );
 
@@ -485,141 +399,95 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
   @override
   Widget build(BuildContext context) {
     return TeacherLayout(
-      title: 'MCQ Papers',
+      title: 'Questions: ${widget.paper['title']}',
+      onBackPressed: () => Navigator.pop(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.all(32.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Questions: ${widget.paper['title']}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 48.0),
-                        child: Text(
-                          widget.paper['description'] ??
-                              'Manage questions here.',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ),
-                    ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 800;
+
+                final descriptionText = Text(
+                  widget.paper['description'] ?? 'Manage questions here.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
-                ),
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 48,
-                      width: 150,
-                      child: DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        value: _statusFilter,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 0,
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'all',
-                            child: Text('All Statuses'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'active',
-                            child: Text('Active Only'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'inactive',
-                            child: Text('Inactive Only'),
-                          ),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _statusFilter = val);
-                            _fetchQuestions();
-                          }
-                        },
+                );
+
+
+                final searchBox = SizedBox(
+                  height: 48,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search questions...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    ),
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val;
+                      });
+                      _fetchQuestions();
+                    },
+                  ),
+                );
+
+                final actionBtn = SizedBox(
+                  height: 48,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showQuestionModal(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Question'),
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      height: 48,
-                      width: 250,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search questions...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 0,
-                          ),
-                        ),
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                          _fetchQuestions();
-                        },
-                      ),
+                  ),
+                );
+
+                if (isMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      descriptionText,
+                      const SizedBox(height: 16),
+
+                      searchBox,
+                      const SizedBox(height: 16),
+                      actionBtn,
+                    ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: descriptionText,
                     ),
                     const SizedBox(width: 16),
-                    SizedBox(
-                      height: 48,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showQuestionModal(),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Question'),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        children: [
+
+                          Expanded(flex: 2, child: searchBox),
+                          const SizedBox(width: 16),
+                          actionBtn,
+                        ],
                       ),
                     ),
                   ],
-                ),
-              ],
+                );
+              },
             ),
           ),
           Expanded(
@@ -678,7 +546,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                                   DataColumn(label: Text('Q.No')),
                                   DataColumn(label: Text('Question Text')),
                                   DataColumn(label: Text('Options')),
-                                  DataColumn(label: Text('Status')),
                                   DataColumn(label: Text('Actions')),
                                 ],
                                 rows: _questions.asMap().entries.map<DataRow>((
@@ -686,10 +553,6 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                                 ) {
                                   final index = entry.key;
                                   final question = entry.value;
-                                  final isActive =
-                                      question['is_active'] == 1 ||
-                                      question['is_active'] == true;
-
                                   return DataRow(
                                     cells: [
                                       DataCell(Text('${index + 1}')),
@@ -749,58 +612,12 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                                           ),
                                         ),
                                       ),
-                                      DataCell(
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isActive
-                                                ? Colors.green.withOpacity(0.1)
-                                                : Colors.red.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            isActive ? 'Active' : 'Inactive',
-                                            style: TextStyle(
-                                              color: isActive
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+
                                       DataCell(
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            MouseRegion(
-                                              cursor: SystemMouseCursors.click,
-                                              child: IconButton(
-                                                icon: Icon(
-                                                  isActive
-                                                      ? Icons.visibility
-                                                      : Icons.visibility_off,
-                                                  size: 20,
-                                                ),
-                                                color: isActive
-                                                    ? Colors.green
-                                                    : Colors.grey,
-                                                tooltip: isActive
-                                                    ? 'Mark Inactive'
-                                                    : 'Mark Active',
-                                                onPressed: () => _toggleStatus(
-                                                  question['id'],
-                                                  isActive,
-                                                ),
-                                                splashRadius: 20,
-                                              ),
-                                            ),
+
                                             MouseRegion(
                                               cursor: SystemMouseCursors.click,
                                               child: IconButton(

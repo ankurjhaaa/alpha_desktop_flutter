@@ -68,16 +68,7 @@ class _GlobalLeaderboardPageState extends State<GlobalLeaderboardPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Global Leaderboard',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Top 10 students based on total exams taken and average marks.',
-                      style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                    ),
-                    const SizedBox(height: 32),
+
                     if (_leaderboard.isEmpty)
                       const Center(child: Text('No leaderboard data available.'))
                     else

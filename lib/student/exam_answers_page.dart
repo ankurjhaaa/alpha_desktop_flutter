@@ -73,7 +73,8 @@ class _ExamAnswersPageState extends State<ExamAnswersPage> {
     final theme = Theme.of(context);
 
     return StudentLayout(
-      title: 'Exam Answers',
+      title: 'Review Answers - ${widget.paperTitle}',
+      onBackPressed: () => Navigator.pop(context),
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _result == null
@@ -100,31 +101,10 @@ class _ExamAnswersPageState extends State<ExamAnswersPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Back button + Header
+                        // Score and Download button
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: () => Navigator.pop(context),
-                              tooltip: 'Back to Exams',
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Review Answers',
-                                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.paperTitle,
-                                    style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                                  ),
-                                ],
-                              ),
-                            ),
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(

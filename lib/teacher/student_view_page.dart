@@ -303,7 +303,8 @@ class _StudentViewPageState extends State<StudentViewPage> {
     final theme = Theme.of(context);
 
     return TeacherLayout(
-      title: 'Student Details',
+      title: 'Student Profile',
+      onBackPressed: () => Navigator.pop(context),
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _student == null
@@ -313,22 +314,6 @@ class _StudentViewPageState extends State<StudentViewPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Back button + Title
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Student Profile',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      
                       // Student Header Card
                       Container(
                         padding: const EdgeInsets.all(24),

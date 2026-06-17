@@ -108,29 +108,7 @@ class _StudentDashboardContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back, ${profile?['name'] ?? 'Student'}!',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Here is your learning overview.',
-                      style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
+
 
           // Stat Cards
           LayoutBuilder(
@@ -341,13 +319,7 @@ class _StudentDashboardContent extends StatelessWidget {
               )
             else
               ...pendingExams.take(5).map((exam) {
-                bool isLocked = false;
-                if (exam['exam_date'] != null) {
-                  final today = DateTime.now();
-                  final examDate = DateTime.parse(exam['exam_date']);
-                  isLocked = DateTime(today.year, today.month, today.day).isBefore(DateTime(examDate.year, examDate.month, examDate.day));
-                }
-                final color = isLocked ? Colors.red : Colors.blue;
+                final color = Colors.blue;
                 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -359,7 +331,7 @@ class _StudentDashboardContent extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(isLocked ? Icons.lock : Icons.quiz, color: color, size: 22),
+                      Icon(Icons.quiz, color: color, size: 22),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -368,7 +340,7 @@ class _StudentDashboardContent extends StatelessWidget {
                             Text(exam['title'] ?? 'Exam', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                             const SizedBox(height: 4),
                             Text(
-                              isLocked ? 'Locked until ${exam['exam_date']}' : 'Available Now',
+                              exam['exam_date'] != null ? 'Exam Date: ${exam['exam_date']}' : 'Available Now',
                               style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
                             ),
                           ],
@@ -381,7 +353,7 @@ class _StudentDashboardContent extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          isLocked ? 'LOCKED' : 'READY',
+                          'READY',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
                         ),
                       ),

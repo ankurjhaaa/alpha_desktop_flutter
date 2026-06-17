@@ -10,13 +10,12 @@ import '../student/leaderboard_page.dart';
 import '../student/global_leaderboard_page.dart';
 import '../student/materials_page.dart';
 import '../student/feedbacks_page.dart';
-import '../core/services/settings_service.dart';
-
 class StudentLayout extends StatefulWidget {
   final Widget child;
   final String title;
+  final VoidCallback? onBackPressed;
 
-  const StudentLayout({super.key, required this.child, required this.title});
+  const StudentLayout({super.key, required this.child, required this.title, this.onBackPressed});
 
   @override
   State<StudentLayout> createState() => _StudentLayoutState();
@@ -25,24 +24,11 @@ class StudentLayout extends StatefulWidget {
 class _StudentLayoutState extends State<StudentLayout> {
   String _userName = 'Student';
   String _userEmail = '';
-  String _companyName = 'Alpha Graphics';
-  String _logoUrl = '';
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final settings = await SettingsService.getSettings();
-    if (mounted) {
-      setState(() {
-        _companyName = settings['company_name'] ?? 'Alpha Graphics';
-        _logoUrl = settings['logo_url'] ?? '';
-      });
-    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -87,14 +73,26 @@ class _StudentLayoutState extends State<StudentLayout> {
           ),
           child: Row(
             children: [
-              if (!isDesktop)
+              if (widget.onBackPressed != null)
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: widget.onBackPressed,
+                )
+              else if (!isDesktop)
                 IconButton(
                   icon: const Icon(Icons.menu),
                   onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
-              Text(
-                widget.title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              if (widget.onBackPressed != null && !isDesktop)
+                const SizedBox(width: 8)
+              else if (widget.onBackPressed != null)
+                const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const Spacer(),
               ThemeToggleButton(controller: themeController),
@@ -181,9 +179,8 @@ class _StudentLayoutState extends State<StudentLayout> {
       {'title': 'Exams', 'icon': Icons.quiz_outlined, 'activeIcon': Icons.quiz, 'isActive': widget.title == 'Exams', 'page': const ExamsPage()},
       {'title': 'Study Materials', 'icon': Icons.library_books_outlined, 'activeIcon': Icons.library_books, 'isActive': widget.title == 'Study Materials', 'page': const MaterialsPage()},
       {'title': 'Feedbacks', 'icon': Icons.feedback_outlined, 'activeIcon': Icons.feedback, 'isActive': widget.title == 'Feedbacks', 'page': const FeedbacksPage()},
-      {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': widget.title == 'Leaderboard', 'page': const GlobalLeaderboardPage()},
+      {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': widget.title.contains('Leaderboard'), 'page': const GlobalLeaderboardPage()},
       {'title': 'My Profile', 'icon': Icons.person_outline, 'activeIcon': Icons.person, 'isActive': widget.title == 'My Profile', 'page': const MyProfilePage()},
-      {'title': 'Settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'isActive': widget.title == 'Settings', 'page': null},
     ];
 
     return Container(
@@ -204,31 +201,32 @@ class _StudentLayoutState extends State<StudentLayout> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 140,
-                  height: 140,
+                  width: 160,
+                  height: 160,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: theme.colorScheme.primary.withOpacity(0.05),
-                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+                    color: theme.colorScheme.surface,
+                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1), width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: ClipOval(
-                    child: _logoUrl.isNotEmpty 
-                      ? Image.network(
-                          _logoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/logo.png', fit: BoxFit.cover),
-                        )
-                      : Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 60, color: theme.colorScheme.primary),
-                        ),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 60, color: theme.colorScheme.primary),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  _companyName,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                const Text(
+                  'Alpha Graphics',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
