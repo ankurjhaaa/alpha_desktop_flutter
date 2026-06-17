@@ -47,20 +47,13 @@ class PdfHelper {
       final String logoUrl = settings['logo_url'] ?? '';
       final String signatureUrl = settings['signature_url'] ?? '';
 
+      // Force load logo from assets
       pw.MemoryImage? logoImage;
-      if (logoUrl.isNotEmpty) {
-        try {
-          final response = await http.get(Uri.parse(logoUrl));
-          if (response.statusCode == 200) {
-            logoImage = pw.MemoryImage(response.bodyBytes);
-          }
-        } catch (_) {}
-      }
-      if (logoImage == null) {
-        try {
-          final imageBytes = await rootBundle.load('assets/images/logo.png');
-          logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
-        } catch (_) {}
+      try {
+        final imageBytes = await rootBundle.load('assets/images/logo.png');
+        logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
+      } catch (e) {
+        print("Could not load logo.png: $e");
       }
 
       pw.MemoryImage? signatureImage;
@@ -94,10 +87,16 @@ class PdfHelper {
         } catch (_) {}
       }
 
+      // Ensure we extract course and batch if available
+      final courseName = resultData['course']?['name']?.toString() ?? 'N/A';
+      final batchName = resultData['batch']?['name']?.toString() ?? 'N/A';
+      final batchTime = resultData['batch']?['schedule_time']?.toString() ?? 'N/A';
+      final examTime = examDateRaw.contains('T') ? examDateRaw.split('T')[1].substring(0, 5) : (examDateRaw.contains(' ') ? examDateRaw.split(' ')[1].substring(0, 5) : '12:00');
+
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
+          margin: const pw.EdgeInsets.all(30),
           build: (pw.Context ctx) {
             // Determine Grade
             String grade = 'F';
@@ -107,198 +106,211 @@ class PdfHelper {
             else if (percentage >= 60) grade = 'B';
             else if (percentage >= 50) grade = 'C';
 
+            String performanceText = 'POOR';
+            if (grade == 'A+' || grade == 'A') performanceText = 'EXCELLENT';
+            else if (grade == 'B+' || grade == 'B') performanceText = 'GOOD';
+            else if (isPass) performanceText = 'AVERAGE';
+
             return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
-                // Header Region
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (logoImage != null)
-                      pw.Container(
-                        width: 60,
-                        height: 60,
-                        decoration: pw.BoxDecoration(
-                          shape: pw.BoxShape.circle,
-                          image: pw.DecorationImage(image: logoImage, fit: pw.BoxFit.cover),
-                        ),
-                      )
-                    else
-                      pw.Container(width: 60, height: 60),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
-                      children: [
-                        pw.Text(
-                          companyName,
-                          style: pw.TextStyle(
-                            fontSize: 24,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blue900,
+                // Header Background
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.symmetric(vertical: 24),
+                  decoration: pw.BoxDecoration(
+                    color: const PdfColor.fromInt(0xFF5158D7), // A solid blue-purple
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 50,
+                          height: 50,
+                          margin: const pw.EdgeInsets.only(bottom: 12),
+                          decoration: pw.BoxDecoration(
+                            shape: pw.BoxShape.circle,
+                            image: pw.DecorationImage(image: logoImage, fit: pw.BoxFit.cover),
                           ),
                         ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          'STATEMENT OF MARKS',
+                      pw.Text(
+                        companyName.toUpperCase(),
+                        style: pw.TextStyle(
+                          fontSize: 28,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      pw.SizedBox(height: 12),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                        decoration: pw.BoxDecoration(
+                          color: const PdfColor.fromInt(0xFF3F44B2),
+                          borderRadius: pw.BorderRadius.circular(20),
+                        ),
+                        child: pw.Text(
+                          paperTitle.toUpperCase(),
                           style: pw.TextStyle(
                             fontSize: 14,
-                            color: PdfColors.grey700,
-                            letterSpacing: 1.2,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-                pw.SizedBox(height: 16),
+                pw.SizedBox(height: 12),
 
-                // Student Details Rounded Box
+                // Student Details Card
+                pw.Container(
+                  decoration: pw.BoxDecoration(
+                    color: const PdfColor.fromInt(0xFF161E38),
+                    border: pw.Border.all(color: const PdfColor.fromInt(0xFF161E38), width: 2),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      // The Badge
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(top: 8, left: 8, bottom: 8),
+                        child: pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          decoration: pw.BoxDecoration(
+                            color: const PdfColor.fromInt(0xFF5158D7),
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                          child: pw.Text('STUDENT DETAILS', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                        ),
+                      ),
+                      // Table Data
+                      pw.Table(
+                        border: const pw.TableBorder(
+                          horizontalInside: pw.BorderSide(color: PdfColors.grey800),
+                          top: pw.BorderSide(color: PdfColors.grey800),
+                        ),
+                        columnWidths: {
+                          0: const pw.FixedColumnWidth(150),
+                          1: const pw.FlexColumnWidth(),
+                        },
+                        children: [
+                          _buildTableRow('Student Name', finalStudentName),
+                          _buildTableRow('Admission No.', finalAdmissionNo),
+                          _buildTableRow('Father\'s Name', 'Not Provided'),
+                          _buildTableRow('Course', courseName),
+                          _buildTableRow('Date & Time', '$examDate at $examTime'),
+                          _buildTableRow('Batch', batchName),
+                          _buildTableRow('Batch Timing', batchTime),
+                        ]
+                      )
+                    ],
+                  )
+                ),
+                pw.SizedBox(height: 12),
+
+                // Performance Summary
+                pw.Container(
+                  decoration: pw.BoxDecoration(
+                    color: const PdfColor.fromInt(0xFF161E38),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(top: 8, left: 8, bottom: 8),
+                        child: pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          decoration: pw.BoxDecoration(
+                            color: const PdfColor.fromInt(0xFF5158D7),
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                          child: pw.Text('PERFORMANCE SUMMARY', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(left: 8, right: 8, bottom: 8),
+                        child: pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(vertical: 12),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.white,
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                          child: pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildStatBox('MAX MARKS', total.toString(), const PdfColor.fromInt(0xFF335889)),
+                              _buildVerticalDivider(),
+                              _buildStatBox('PASS MARKS', (total * 0.5).toInt().toString(), const PdfColor.fromInt(0xFF2E7B53)),
+                              _buildVerticalDivider(),
+                              _buildStatBox('OBTAINED MARKS', score.toString(), const PdfColor.fromInt(0xFF7044A3)),
+                              _buildVerticalDivider(),
+                              _buildStatBox('PERCENTAGE', '${percentage.toStringAsFixed(2)}%', const PdfColor.fromInt(0xFFD68A3A)),
+                            ],
+                          ),
+                        )
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+
+                // PERFORMANCE BANNER
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.symmetric(vertical: 20),
+                  decoration: pw.BoxDecoration(
+                    color: isPass ? const PdfColor.fromInt(0xFF1E9B79) : const PdfColor.fromInt(0xFFD9534F),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Text('PERFORMANCE', style: pw.TextStyle(color: PdfColors.white, fontSize: 10, letterSpacing: 1.5)),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        performanceText,
+                        style: pw.TextStyle(color: PdfColors.white, fontSize: 22, fontWeight: pw.FontWeight.bold, letterSpacing: 1.2),
+                      )
+                    ]
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+
+                // ABOUT SECTION
                 pw.Container(
                   padding: const pw.EdgeInsets.all(12),
                   decoration: pw.BoxDecoration(
-                    color: PdfColors.grey100,
+                    color: const PdfColor.fromInt(0xFF161E38),
                     borderRadius: pw.BorderRadius.circular(8),
                   ),
                   child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildDetailRow('Student Name:', finalStudentName.toUpperCase()),
-                          _buildDetailRow('Registration No:', finalAdmissionNo.isNotEmpty ? finalAdmissionNo : 'N/A'),
-                        ],
-                      ),
-                      pw.SizedBox(height: 16),
-                      pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildDetailRow('Examination:', 'Computer Based Test (CBT)'),
-                          _buildDetailRow('Date:', examDate),
-                        ],
+                      pw.Text('About This Test Series', style: pw.TextStyle(color: const PdfColor.fromInt(0xFF5158D7), fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 6),
+                      pw.Text(
+                        'The $companyName Test Series is designed to provide students with comprehensive assessment of their knowledge and skills. This result reflects your performance in the test, highlighting areas of strength and opportunities for improvement. We are committed to supporting your academic growth with detailed feedback and resources.',
+                        style: pw.TextStyle(color: PdfColors.grey300, fontSize: 10, lineSpacing: 1.2),
                       ),
                     ],
                   ),
                 ),
-                pw.SizedBox(height: 24),
-
-                // Minimalist Marksheet Table
-                pw.Text(
-                  'ACADEMIC PERFORMANCE',
-                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800),
-                ),
-                pw.SizedBox(height: 12),
-                pw.Container(
-                  decoration: pw.BoxDecoration(
-                    borderRadius: pw.BorderRadius.circular(8),
-                    border: pw.Border.all(color: PdfColors.grey300, width: 1),
-                  ),
-                  child: pw.Column(
-                    children: [
-                      // Table Header
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                        decoration: pw.BoxDecoration(
-                          color: PdfColors.grey100,
-                          borderRadius: const pw.BorderRadius.only(
-                            topLeft: pw.Radius.circular(8),
-                            topRight: pw.Radius.circular(8),
-                          ),
-                        ),
-                        child: pw.Row(
-                          children: [
-                            pw.Expanded(flex: 3, child: pw.Text('Subject', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
-                            pw.Expanded(flex: 1, child: pw.Text('Max', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
-                            pw.Expanded(flex: 1, child: pw.Text('Pass', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
-                            pw.Expanded(flex: 1, child: pw.Text('Obtained', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
-                            pw.Expanded(flex: 1, child: pw.Text('Grade', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700))),
-                          ],
-                        ),
-                      ),
-                      pw.Divider(height: 1, color: PdfColors.grey300),
-                      // Data Row
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                        child: pw.Row(
-                          children: [
-                            pw.Expanded(flex: 3, child: pw.Text(paperTitle, style: const pw.TextStyle(fontSize: 12))),
-                            pw.Expanded(flex: 1, child: pw.Text(total.toString(), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 12))),
-                            pw.Expanded(flex: 1, child: pw.Text((total * 0.5).toInt().toString(), textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 12))),
-                            pw.Expanded(flex: 1, child: pw.Text(score.toString(), textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold))),
-                            pw.Expanded(flex: 1, child: pw.Text(grade, textAlign: pw.TextAlign.center, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: isPass ? PdfColors.green700 : PdfColors.red700))),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-
-                // Overall Summary Box
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    color: isPass ? PdfColors.green50 : PdfColors.red50,
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text('Overall Percentage', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                          pw.SizedBox(height: 4),
-                          pw.Text('${percentage.toStringAsFixed(2)}%', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.grey900)),
-                        ],
-                      ),
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.end,
-                        children: [
-                          pw.Text('Final Status', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            isPass ? "PASS" : "FAIL",
-                            style: pw.TextStyle(
-                              fontSize: 20,
-                              fontWeight: pw.FontWeight.bold,
-                              color: isPass ? PdfColors.green700 : PdfColors.red700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
+                
                 pw.Spacer(),
 
-                // Signatures
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                // FOOTER
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
-                      children: [
-                        pw.Container(width: 120, height: 1, color: PdfColors.grey400),
-                        pw.SizedBox(height: 8),
-                        pw.Text(examDate, style: pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
-                        pw.Text('Date', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
-                      ],
-                    ),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
-                      children: [
-                        if (signatureImage != null)
-                          pw.Container(
-                            height: 40,
-                            child: pw.Image(signatureImage),
-                          )
-                        else
-                          pw.SizedBox(height: 40),
-                        pw.Container(width: 120, height: 1, color: PdfColors.grey400),
-                        pw.SizedBox(height: 8),
-                        pw.Text('Authorized Signature', style: pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
-                      ],
-                    ),
+                    pw.Text('Developed by', style: pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
+                    pw.SizedBox(height: 4),
+                    pw.Text('Brolytics Technologies', style: pw.TextStyle(color: const PdfColor.fromInt(0xFF5158D7), fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 6),
+                    pw.Container(width: 150, height: 1, color: const PdfColor.fromInt(0xFF5158D7)),
                   ],
                 ),
               ],
@@ -320,28 +332,23 @@ class PdfHelper {
       );
 
       if (result != null) {
-        final file = File(result.path);
+        String finalPath = result.path;
+        File file = File(finalPath);
 
-        // Check if file exists to prevent silent overwrite
+        // Check if file exists and auto-append (1), (2), etc.
         if (await file.exists()) {
-          if (!context.mounted) return;
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('File Already Exists'),
-              content: Text('The file "${result.path.split('/').last}" already exists. Do you want to overwrite it?'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                  child: const Text('Overwrite'),
-                ),
-              ],
-            ),
-          );
-
-          if (confirm != true) return; // User canceled
+          int counter = 1;
+          String dir = file.parent.path;
+          String nameWithoutExt = file.path.split('/').last;
+          if (nameWithoutExt.endsWith('.pdf')) {
+            nameWithoutExt = nameWithoutExt.substring(0, nameWithoutExt.length - 4);
+          }
+          
+          while (await file.exists()) {
+            finalPath = '$dir/$nameWithoutExt ($counter).pdf';
+            file = File(finalPath);
+            counter++;
+          }
         }
 
         await file.writeAsBytes(await pdf.save());
@@ -359,28 +366,40 @@ class PdfHelper {
     }
   }
 
-  static pw.Widget _buildDetailRow(String label, String value) {
-    return pw.Row(
+  static pw.TableRow _buildTableRow(String label, String value) {
+    return pw.TableRow(
       children: [
-        pw.Text(label, style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(width: 8),
-        pw.Text(value, style: const pw.TextStyle(fontSize: 12)),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: const PdfColor.fromInt(0xFF161E38),
+          child: pw.Text(label, style: pw.TextStyle(color: PdfColors.white, fontSize: 11)),
+        ),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: PdfColors.white,
+          child: pw.Text(value, style: pw.TextStyle(color: PdfColors.black, fontSize: 11)),
+        ),
       ],
     );
   }
 
-  static pw.Widget _buildTableCell(String text, {bool isHeader = false, pw.TextAlign align = pw.TextAlign.left, bool bold = false, PdfColor? color}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(10),
-      child: pw.Text(
-        text,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 12 : 11,
-          fontWeight: (isHeader || bold) ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: color ?? (isHeader ? PdfColors.black : PdfColors.grey900),
-        ),
-      ),
+  static pw.Widget _buildStatBox(String label, String value, PdfColor color) {
+    return pw.Expanded(
+      child: pw.Column(
+        children: [
+          pw.Text(label.toUpperCase(), style: pw.TextStyle(fontSize: 10, color: const PdfColor.fromInt(0xFF161E38), fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.Text(value, style: pw.TextStyle(fontSize: 22, color: color, fontWeight: pw.FontWeight.bold)),
+        ],
+      )
+    );
+  }
+
+  static pw.Widget _buildVerticalDivider() {
+    return pw.Container(
+      width: 1,
+      height: 40,
+      color: PdfColors.grey300,
     );
   }
 }

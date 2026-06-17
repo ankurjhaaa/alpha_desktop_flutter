@@ -25,6 +25,7 @@ class StudentExamAnswersPage extends StatefulWidget {
 class _StudentExamAnswersPageState extends State<StudentExamAnswersPage> {
   Map<String, dynamic>? _result;
   List<dynamic> _questions = [];
+  String _paperTitle = 'Exam Result';
   bool _isLoading = true;
 
   @override
@@ -51,6 +52,9 @@ class _StudentExamAnswersPageState extends State<StudentExamAnswersPage> {
         setState(() {
           _result = data['result'];
           _questions = data['questions'];
+          if (data['paper_title'] != null) {
+            _paperTitle = data['paper_title'];
+          }
           _isLoading = false;
         });
       } else {
@@ -105,9 +109,9 @@ class _StudentExamAnswersPageState extends State<StudentExamAnswersPage> {
                           const SizedBox(width: 16),
                           ElevatedButton.icon(
                             onPressed: () {
-                              PdfHelper.generateExamResultPdf(
-                                context: context,
-                                paperTitle: 'Exam Result',
+                                PdfHelper.generateExamResultPdf(
+                                  context: context,
+                                  paperTitle: _paperTitle,
                                 studentName: widget.studentName,
                                 resultData: _result!,
                                 questions: _questions,

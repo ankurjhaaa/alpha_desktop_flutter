@@ -363,6 +363,159 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
     );
   }
 
+  void _showJsonImportModal() {
+    final jsonController = TextEditingController();
+
+    ModalHelper.showRightSideModal(
+      context: context,
+      title: 'Import Questions via JSON',
+      contentBuilder: (context, setModalState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Paste a JSON array of questions here. Each question must have:\n'
+              '"question_text", "option_a", "option_b", "option_c", "option_d", "correct_option" (a/b/c/d).',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: jsonController,
+              decoration: InputDecoration(
+                labelText: 'JSON Data',
+                hintText: '[\n  {\n    "question_text": "Sample Question",\n    "option_a": "A",\n    "option_b": "B",\n    "option_c": "C",\n    "option_d": "D",\n    "correct_option": "a"\n  }\n]',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 15,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            ),
+            const SizedBox(height: 32),
+          ],
+        );
+      },
+      actionBuilder: (context, setModalState) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 18,
+                  ),
+                  minimumSize: const Size(120, 54),
+                ),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (jsonController.text.trim().isEmpty) return;
+
+                  List<dynamic> jsonList;
+                  try {
+                    jsonList = jsonDecode(jsonController.text);
+                    if (jsonList is! List) {
+                      throw const FormatException('Expected a JSON array.');
+                    }
+                  } catch (e) {
+                    SnackbarHelper.showError(context, 'Invalid JSON format. Expected an array of objects.');
+                    return;
+                  }
+
+                  // Validate each question
+                  for (int i = 0; i < jsonList.length; i++) {
+                    final item = jsonList[i];
+                    if (item is! Map) {
+                      SnackbarHelper.showError(context, 'Item at index $i is not an object.');
+                      return;
+                    }
+                    final requiredKeys = ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option'];
+                    for (final key in requiredKeys) {
+                      if (!item.containsKey(key) || item[key] == null || item[key].toString().trim().isEmpty) {
+                        SnackbarHelper.showError(context, 'Question $i is missing required key: $key');
+                        return;
+                      }
+                    }
+                    final correct = item['correct_option'].toString().toLowerCase().trim();
+                    if (!['a', 'b', 'c', 'd'].contains(correct)) {
+                      SnackbarHelper.showError(context, 'Question $i has invalid correct_option. Must be a, b, c, or d.');
+                      return;
+                    }
+                    
+                    item['correct_option'] = correct;
+                    item['mcq_paper_id'] = widget.paper['id'];
+                    item['is_active'] = true;
+                  }
+
+                  final prefs = await SharedPreferences.getInstance();
+                  final token = prefs.getString('auth_token');
+
+                  try {
+                    final response = await http.post(
+                      Uri.parse(ApiConstants.baseUrl + '/mcq_questions/bulk'),
+                      headers: {
+                        'Authorization': 'Bearer $token',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                      },
+                      body: jsonEncode({'questions': jsonList}),
+                    );
+
+                    if (response.statusCode == 201 || response.statusCode == 200) {
+                      if (context.mounted) Navigator.pop(context);
+                      _fetchQuestions();
+                      SnackbarHelper.showSuccess(context, 'Successfully imported ${jsonList.length} questions.');
+                    } else {
+                      SnackbarHelper.showError(context, 'Failed to import questions. Server returned: ${response.statusCode}');
+                    }
+                  } catch (e) {
+                    SnackbarHelper.showError(context, 'Network error while importing questions.');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 18,
+                  ),
+                  minimumSize: const Size(120, 54),
+                ),
+                child: const Text(
+                  'Import JSON',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return TeacherLayout(
@@ -418,16 +571,36 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                   ),
                 );
 
+                final jsonBtn = SizedBox(
+                  height: 48,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showJsonImportModal(),
+                      icon: const Icon(Icons.data_object),
+                      label: const Text('Import JSON'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                );
+
                 if (isMobile) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       descriptionText,
                       const SizedBox(height: 16),
-
                       searchBox,
                       const SizedBox(height: 16),
-                      actionBtn,
+                      Row(
+                        children: [
+                          Expanded(child: jsonBtn),
+                          const SizedBox(width: 8),
+                          Expanded(child: actionBtn),
+                        ],
+                      ),
                     ],
                   );
                 }
@@ -445,9 +618,10 @@ class _McqQuestionManagerPageState extends State<McqQuestionManagerPage> {
                       flex: 2,
                       child: Row(
                         children: [
-
                           Expanded(flex: 2, child: searchBox),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 8),
+                          jsonBtn,
+                          const SizedBox(width: 8),
                           actionBtn,
                         ],
                       ),

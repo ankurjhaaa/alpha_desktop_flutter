@@ -305,19 +305,29 @@ class _McqManagerPageState extends State<McqManagerPage> {
                             controller: startTimeController,
                             readOnly: true,
                             onTap: () async {
-                              final pickedDate = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime(2101),
-                              );
-                              if (pickedDate != null) {
+                              DateTime? baseDate;
+                              if (dateController.text.isNotEmpty) {
+                                try {
+                                  baseDate = DateTime.parse(dateController.text);
+                                } catch (_) {}
+                              }
+                              
+                              if (baseDate == null) {
+                                baseDate = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2101),
+                                );
+                              }
+
+                              if (baseDate != null) {
                                 final pickedTime = await showTimePicker(
                                   context: context,
                                   initialTime: TimeOfDay.now(),
                                 );
                                 if (pickedTime != null) {
-                                  final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+                                  final dt = DateTime(baseDate.year, baseDate.month, baseDate.day, pickedTime.hour, pickedTime.minute);
                                   setModalState(() {
                                     startTimeController.text = "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
                                   });
@@ -338,19 +348,29 @@ class _McqManagerPageState extends State<McqManagerPage> {
                             controller: endTimeController,
                             readOnly: true,
                             onTap: () async {
-                              final pickedDate = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime(2101),
-                              );
-                              if (pickedDate != null) {
+                              DateTime? baseDate;
+                              if (dateController.text.isNotEmpty) {
+                                try {
+                                  baseDate = DateTime.parse(dateController.text);
+                                } catch (_) {}
+                              }
+                              
+                              if (baseDate == null) {
+                                baseDate = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2101),
+                                );
+                              }
+
+                              if (baseDate != null) {
                                 final pickedTime = await showTimePicker(
                                   context: context,
                                   initialTime: TimeOfDay.now(),
                                 );
                                 if (pickedTime != null) {
-                                  final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+                                  final dt = DateTime(baseDate.year, baseDate.month, baseDate.day, pickedTime.hour, pickedTime.minute);
                                   setModalState(() {
                                     endTimeController.text = "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
                                   });
