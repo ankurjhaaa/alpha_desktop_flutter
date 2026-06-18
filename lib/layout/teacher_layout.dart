@@ -210,7 +210,7 @@ class _TeacherLayoutState extends State<TeacherLayout> {
                   height: 160,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: theme.colorScheme.surface,
+                    color: Colors.white,
                     border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1), width: 2),
                     boxShadow: [
                       BoxShadow(
@@ -221,17 +221,15 @@ class _TeacherLayoutState extends State<TeacherLayout> {
                     ],
                   ),
                   child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Icon(Icons.computer, size: 60, color: theme.colorScheme.primary),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Alpha Graphics',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),

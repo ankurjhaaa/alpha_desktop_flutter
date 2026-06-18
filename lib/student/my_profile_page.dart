@@ -270,8 +270,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                     Expanded(flex: 3, child: Text('Batch Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                                     Expanded(flex: 2, child: Text('Course', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                                     Expanded(flex: 2, child: Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                                    Expanded(flex: 1, child: Text('Fee', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                                    Expanded(flex: 1, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), textAlign: TextAlign.center)),
+                                    Expanded(flex: 2, child: Text('Start Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                                    Expanded(flex: 2, child: Text('End Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                                   ],
                                 ),
                               ),
@@ -328,30 +328,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
                                         ),
                                       ),
                                       Expanded(
-                                        flex: 1,
+                                        flex: 2,
                                         child: Text(
-                                          batch['fee'] != null ? '₹${batch['fee']}' : 'N/A',
-                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                          batch['start_date'] ?? 'N/A',
+                                          style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                                         ),
                                       ),
                                       Expanded(
-                                        flex: 1,
-                                        child: Center(
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: _getStatusColor(pivot?['status']).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              (pivot?['status'] ?? 'unpaid').toUpperCase(),
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: _getStatusColor(pivot?['status']),
-                                              ),
-                                            ),
-                                          ),
+                                        flex: 2,
+                                        child: Text(
+                                          batch['end_date'] ?? 'N/A',
+                                          style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                                         ),
                                       ),
                                     ],

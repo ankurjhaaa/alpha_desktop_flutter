@@ -26,6 +26,7 @@ class _StudentsPageState extends State<StudentsPage> {
   String? _courseFilter;
   String? _batchFilter;
   List<dynamic> _courses = [];
+  List<dynamic> _allBatches = [];
 
   @override
   void initState() {
@@ -63,6 +64,14 @@ class _StudentsPageState extends State<StudentsPage> {
         },
       );
 
+      final allBatchesRes = await http.get(
+        Uri.parse(ApiConstants.baseUrl + '/batches'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
       final studentUri = Uri.parse(ApiConstants.baseUrl + '/students')
           .replace(
             queryParameters: {
@@ -82,11 +91,13 @@ class _StudentsPageState extends State<StudentsPage> {
 
       if (coursesRes.statusCode == 200 &&
           batchesRes.statusCode == 200 &&
-          studentsRes.statusCode == 200) {
+          studentsRes.statusCode == 200 &&
+          allBatchesRes.statusCode == 200) {
         setState(() {
           _courses = jsonDecode(coursesRes.body);
           _batches = jsonDecode(batchesRes.body);
           _students = jsonDecode(studentsRes.body);
+          _allBatches = jsonDecode(allBatchesRes.body);
           _isLoading = false;
         });
       } else {
@@ -172,6 +183,10 @@ class _StudentsPageState extends State<StudentsPage> {
     final addressController = TextEditingController(text: isEdit ? student['address'] : '');
     String? dob = isEdit ? student['dob'] : null;
     String? gender = isEdit ? student['gender'] : null;
+    int? selectedBatchId;
+    if (isEdit && student['batches'] != null && (student['batches'] as List).isNotEmpty) {
+      selectedBatchId = student['batches'][0]['id'];
+    }
 
     XFile? selectedImage;
     Uint8List? selectedImageBytes;
@@ -180,9 +195,65 @@ class _StudentsPageState extends State<StudentsPage> {
       context: context,
       title: isEdit ? 'Edit Student' : 'Add New Student',
       contentBuilder: (context, setModalState) {
+        final today = DateTime.now();
+        final todayDateOnly = DateTime(today.year, today.month, today.day);
+        final nonExpiredBatches = _allBatches.where((batch) {
+          if (selectedBatchId != null && batch['id'] == selectedBatchId) {
+            return true;
+          }
+          if (batch['end_date'] == null) return true;
+          final endDate = DateTime.tryParse(batch['end_date']);
+          if (endDate == null) return true;
+          return !endDate.isBefore(todayDateOnly);
+        }).toList();
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    backgroundImage: selectedImageBytes != null
+                        ? MemoryImage(selectedImageBytes!)
+                        : (isEdit && student['profile_image'] != null
+                            ? NetworkImage(student['profile_image']) as ImageProvider
+                            : null),
+                    child: selectedImageBytes == null && (!isEdit || student['profile_image'] == null)
+                        ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: InkWell(
+                      onTap: () async {
+                        final typeGroup = const XTypeGroup(
+                          label: 'images',
+                          extensions: ['jpg', 'png', 'jpeg'],
+                        );
+                        final result = await openFile(acceptedTypeGroups: [typeGroup]);
+                        if (result != null) {
+                          final bytes = await result.readAsBytes();
+                          setModalState(() {
+                            selectedImage = result;
+                            selectedImageBytes = bytes;
+                          });
+                        }
+                      },
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
             // --- Required Fields ---
                     Text(
                       'Required Fields',
@@ -209,50 +280,6 @@ class _StudentsPageState extends State<StudentsPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Center(
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            backgroundImage: selectedImageBytes != null
-                                ? MemoryImage(selectedImageBytes!)
-                                : (isEdit && student['profile_image'] != null
-                                    ? NetworkImage(student['profile_image']) as ImageProvider
-                                    : null),
-                            child: selectedImageBytes == null && (!isEdit || student['profile_image'] == null)
-                                ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: InkWell(
-                              onTap: () async {
-                                final typeGroup = const XTypeGroup(
-                                  label: 'images',
-                                  extensions: ['jpg', 'png', 'jpeg'],
-                                );
-                                final result = await openFile(acceptedTypeGroups: [typeGroup]);
-                                if (result != null) {
-                                  final bytes = await result.readAsBytes();
-                                  setModalState(() {
-                                    selectedImage = result;
-                                    selectedImageBytes = bytes;
-                                  });
-                                }
-                              },
-                              child: CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                     TextField(
                       controller: emailController,
                       decoration: InputDecoration(
@@ -412,6 +439,31 @@ class _StudentsPageState extends State<StudentsPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        labelText: 'Select Batch (Optional)',
+                        prefixIcon: const Icon(Icons.class_outlined, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      value: selectedBatchId,
+                      isExpanded: true,
+                      items: [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text('None (No Batch)'),
+                        ),
+                        ...nonExpiredBatches.map<DropdownMenuItem<int>>((batch) {
+                          final courseName = batch['course'] != null ? batch['course']['name'] : 'Unknown Course';
+                          return DropdownMenuItem<int>(
+                            value: batch['id'],
+                            child: Text("${batch['name']} ($courseName)"),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (val) => setModalState(() => selectedBatchId = val),
+                    ),
+                    const SizedBox(height: 16),
           ],
         );
       },
@@ -509,6 +561,10 @@ class _StudentsPageState extends State<StudentsPage> {
                         request.fields[key] = value.toString();
                       }
                     });
+
+                    if (selectedBatchId != null) {
+                      request.fields['batch_ids[0]'] = selectedBatchId.toString();
+                    }
 
                     if (selectedImageBytes != null) {
                       request.files.add(

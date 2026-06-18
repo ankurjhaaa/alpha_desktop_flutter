@@ -86,7 +86,7 @@ class _StudentViewPageState extends State<StudentViewPage> {
     }
   }
 
-  Future<void> _attachBatch(int batchId, String amountPaid, String transactionId, String paymentStatus) async {
+  Future<void> _attachBatch(int batchId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
@@ -100,9 +100,6 @@ class _StudentViewPageState extends State<StudentViewPage> {
         },
         body: jsonEncode({
           'batch_id': batchId,
-          'amount_paid': amountPaid.isNotEmpty ? double.tryParse(amountPaid) : null,
-          'transaction_id': transactionId.isNotEmpty ? transactionId : null,
-          'status': paymentStatus,
         }),
       );
 
@@ -125,9 +122,6 @@ class _StudentViewPageState extends State<StudentViewPage> {
 
   void _showEnrollBatchModal() {
     int? selectedBatchId;
-    final amountController = TextEditingController();
-    final transactionController = TextEditingController();
-    String paymentStatus = 'unpaid';
     bool isSubmitting = false;
 
     showDialog(
@@ -178,51 +172,6 @@ class _StudentViewPageState extends State<StudentViewPage> {
                       }).toList(),
                       onChanged: (val) => setModalState(() => selectedBatchId = val),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: amountController,
-                            decoration: InputDecoration(
-                              labelText: 'Amount Paid',
-                              prefixIcon: const Icon(Icons.currency_rupee, size: 20),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: InputDecoration(
-                              labelText: 'Payment Status',
-                              prefixIcon: const Icon(Icons.payment, size: 20),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            ),
-                            value: paymentStatus,
-                            items: const [
-                              DropdownMenuItem(value: 'paid', child: Text('Paid')),
-                              DropdownMenuItem(value: 'partial', child: Text('Partial')),
-                              DropdownMenuItem(value: 'unpaid', child: Text('Unpaid')),
-                            ],
-                            onChanged: (val) => setModalState(() => paymentStatus = val!),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: transactionController,
-                      decoration: InputDecoration(
-                        labelText: 'Transaction ID (Optional)',
-                        prefixIcon: const Icon(Icons.receipt_long_outlined, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      ),
-                    ),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -251,9 +200,6 @@ class _StudentViewPageState extends State<StudentViewPage> {
                               setModalState(() => isSubmitting = true);
                               await _attachBatch(
                                 selectedBatchId!,
-                                amountController.text,
-                                transactionController.text,
-                                paymentStatus,
                               );
                               if (context.mounted) Navigator.pop(context);
                             },
@@ -524,9 +470,8 @@ class _StudentViewPageState extends State<StudentViewPage> {
                                   children: [
                                     Expanded(flex: 3, child: Text('Batch Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                                     Expanded(flex: 2, child: Text('Course', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                                    Expanded(flex: 2, child: Text('Amount Paid', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                                    Expanded(flex: 2, child: Text('Transaction ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                                    Expanded(flex: 1, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13), textAlign: TextAlign.center)),
+                                    Expanded(flex: 2, child: Text('Start Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                                    Expanded(flex: 2, child: Text('End Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                                   ],
                                 ),
                               ),
@@ -578,35 +523,15 @@ class _StudentViewPageState extends State<StudentViewPage> {
                                       Expanded(
                                         flex: 2,
                                         child: Text(
-                                          pivot?['amount_paid'] != null ? '₹${pivot['amount_paid']}' : 'N/A',
-                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                          batch['start_date'] ?? 'N/A',
+                                          style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                                         ),
                                       ),
                                       Expanded(
                                         flex: 2,
                                         child: Text(
-                                          pivot?['transaction_id'] ?? '—',
+                                          batch['end_date'] ?? 'N/A',
                                           style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: Center(
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: _getStatusColor(pivot?['status']).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              (pivot?['status'] ?? 'unpaid').toUpperCase(),
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: _getStatusColor(pivot?['status']),
-                                              ),
-                                            ),
-                                          ),
                                         ),
                                       ),
                                     ],

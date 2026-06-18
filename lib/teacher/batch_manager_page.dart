@@ -140,15 +140,14 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
     final nameController = TextEditingController(
       text: isEdit ? batch['name'] : '',
     );
-    final feeController = TextEditingController(
-      text: isEdit ? batch['fee'].toString() : '',
-    );
     final scheduleController = TextEditingController(
       text: isEdit ? batch['schedule_time'] : '',
     );
     int? selectedCourseId = isEdit
         ? batch['course_id']
         : (_courses.isNotEmpty ? _courses.first['id'] : null);
+    String? startDate = isEdit ? batch['start_date'] : null;
+    String? endDate = isEdit ? batch['end_date'] : null;
 
     if (_courses.isEmpty) {
       SnackbarHelper.showError(context, 'Please create a course first!');
@@ -206,37 +205,83 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    TextField(
+                      controller: scheduleController,
+                      decoration: InputDecoration(
+                        labelText: 'Schedule (e.g. 10 AM - 12 PM)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: feeController,
-                            decoration: InputDecoration(
-                              labelText: 'Fee',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: startDate != null ? DateTime.parse(startDate!) : DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2035),
+                              );
+                              if (picked != null) {
+                                setModalState(() {
+                                  startDate = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                                });
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'Start Date',
+                                prefixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
+                              child: Text(
+                                startDate ?? 'Select Date',
+                                style: TextStyle(
+                                  color: startDate != null ? null : Colors.grey,
+                                  fontSize: 15,
+                                ),
                               ),
-                              prefixText: '₹ ',
                             ),
-                            keyboardType: TextInputType.number,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: TextField(
-                            controller: scheduleController,
-                            decoration: InputDecoration(
-                              labelText: 'Schedule (e.g. 10 AM - 12 PM)',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: endDate != null ? DateTime.parse(endDate!) : DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2035),
+                              );
+                              if (picked != null) {
+                                setModalState(() {
+                                  endDate = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                                });
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'End Date',
+                                prefixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
+                              child: Text(
+                                endDate ?? 'Select Date',
+                                style: TextStyle(
+                                  color: endDate != null ? null : Colors.grey,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                           ),
@@ -311,8 +356,9 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
                       body: jsonEncode({
                         'course_id': selectedCourseId,
                         'name': nameController.text,
-                        'fee': feeController.text,
                         'schedule_time': scheduleController.text,
+                        'start_date': startDate,
+                        'end_date': endDate,
                         'is_active': true,
                         'is_hidden': false,
                       }),
@@ -528,8 +574,9 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
                                   DataColumn(label: Text('ID')),
                                   DataColumn(label: Text('Batch Name')),
                                   DataColumn(label: Text('Course')),
-                                  DataColumn(label: Text('Fee')),
                                   DataColumn(label: Text('Schedule')),
+                                  DataColumn(label: Text('Start Date')),
+                                  DataColumn(label: Text('End Date')),
                                   DataColumn(label: Text('Actions')),
                                 ],
                                 rows: _batches.map<DataRow>((batch) {
@@ -574,9 +621,14 @@ class _BatchManagerPageState extends State<BatchManagerPage> {
                                           ),
                                         ),
                                       ),
-                                      DataCell(Text('₹ ${batch['fee']}')),
                                       DataCell(
                                         Text(batch['schedule_time'] ?? '-'),
+                                      ),
+                                      DataCell(
+                                        Text(batch['start_date'] ?? '-'),
+                                      ),
+                                      DataCell(
+                                        Text(batch['end_date'] ?? '-'),
                                       ),
 
                                       DataCell(
