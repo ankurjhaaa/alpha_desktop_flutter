@@ -172,6 +172,7 @@ class _McqManagerPageState extends State<McqManagerPage> {
     final invigilatorsController = TextEditingController(
       text: isEdit ? (paper['invigilators'] ?? '') : '',
     );
+    final studentSearchController = TextEditingController();
     int? selectedBatchId = isEdit
         ? paper['batch_id']
         : (_batches.isNotEmpty ? _batches.first['id'] : null);
@@ -181,13 +182,54 @@ class _McqManagerPageState extends State<McqManagerPage> {
       return;
     }
 
+    bool _isLoadingStudents = false;
+    List<dynamic> _batchStudents = [];
+    List<int> _selectedStudentIds = isEdit && paper['selected_student_ids'] != null 
+        ? List<int>.from(paper['selected_student_ids'].map((x) => int.parse(x.toString())))
+        : [];
+
+    Future<void> _fetchStudentsForBatch(int batchId, StateSetter setModalState) async {
+      setModalState(() => _isLoadingStudents = true);
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      try {
+        final res = await http.get(
+          Uri.parse('${ApiConstants.baseUrl}/students?batch_id=$batchId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
+        if (res.statusCode == 200) {
+          final students = jsonDecode(res.body);
+          setModalState(() {
+            _batchStudents = students;
+            if (!isEdit) {
+               _selectedStudentIds = _batchStudents.map((s) => s['id'] as int).toList();
+            }
+            _isLoadingStudents = false;
+          });
+        } else {
+          setModalState(() => _isLoadingStudents = false);
+        }
+      } catch (e) {
+        setModalState(() => _isLoadingStudents = false);
+      }
+    }
+
     ModalHelper.showRightSideModal(
       context: context,
       title: isEdit ? 'Edit MCQ Paper' : 'Create MCQ Paper',
-      contentBuilder: (context, setModalState) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      contentBuilder: (context, setModalStateOuter) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            // Fetch initial students if batch is already selected and we haven't fetched yet
+            if (selectedBatchId != null && _batchStudents.isEmpty && !_isLoadingStudents) {
+               _fetchStudentsForBatch(selectedBatchId!, setModalState);
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                     const Text(
                       'Select Batch',
                       style: TextStyle(fontWeight: FontWeight.w600),
@@ -205,9 +247,14 @@ class _McqManagerPageState extends State<McqManagerPage> {
                         );
                       }).toList(),
                       onChanged: (val) {
-                        setModalState(() {
-                          selectedBatchId = val;
-                        });
+                        if (val != null && val != selectedBatchId) {
+                          setModalState(() {
+                            selectedBatchId = val;
+                            // reset selection when batch changes
+                            _selectedStudentIds.clear(); 
+                          });
+                          _fetchStudentsForBatch(val, setModalState);
+                        }
                       },
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
@@ -264,7 +311,9 @@ class _McqManagerPageState extends State<McqManagerPage> {
                               );
                               if (pickedDate != null) {
                                 // format as yyyy-mm-dd
-                                dateController.text = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+                                setModalState(() {
+                                  dateController.text = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+                                });
                               }
                             },
                             decoration: InputDecoration(
@@ -403,8 +452,120 @@ class _McqManagerPageState extends State<McqManagerPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Eligible Students',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isLoadingStudents)
+                            const Center(child: CircularProgressIndicator())
+                          else if (_batchStudents.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text('No students found in this batch.'),
+                            )
+                          else ...[
+                            TextField(
+                              controller: studentSearchController,
+                              onChanged: (val) => setModalState(() {}),
+                              decoration: InputDecoration(
+                                hintText: 'Search by name, email, phone, admission no...',
+                                prefixIcon: const Icon(Icons.search, size: 20),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Builder(
+                              builder: (context) {
+                                final query = studentSearchController.text.toLowerCase();
+                                final filteredStudents = _batchStudents.where((student) {
+                                  if (query.isEmpty) return true;
+                                  final name = (student['name'] ?? '').toString().toLowerCase();
+                                  final email = (student['email'] ?? '').toString().toLowerCase();
+                                  final phone = (student['phone'] ?? student['mobile_number'] ?? student['mobile'] ?? '').toString().toLowerCase();
+                                  final admissionNo = (student['admission_no'] ?? student['admission_number'] ?? '').toString().toLowerCase();
+                                  return name.contains(query) || email.contains(query) || phone.contains(query) || admissionNo.contains(query);
+                                }).toList();
+
+                                if (filteredStudents.isEmpty) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text('No students matched your search.'),
+                                  );
+                                }
+
+                                return Column(
+                                  children: [
+                                    CheckboxListTile(
+                                      title: const Text('Select All', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      value: filteredStudents.every((s) => _selectedStudentIds.contains(s['id'] as int)),
+                                      onChanged: (bool? value) {
+                                        setModalState(() {
+                                          if (value == true) {
+                                            for (var s in filteredStudents) {
+                                              if (!_selectedStudentIds.contains(s['id'] as int)) {
+                                                _selectedStudentIds.add(s['id'] as int);
+                                              }
+                                            }
+                                          } else {
+                                            for (var s in filteredStudents) {
+                                              _selectedStudentIds.remove(s['id'] as int);
+                                            }
+                                          }
+                                        });
+                                      },
+                                      controlAffinity: ListTileControlAffinity.leading,
+                                      dense: true,
+                                    ),
+                                    const Divider(height: 1),
+                                    ...filteredStudents.map((student) {
+                                      final studentId = student['id'] as int;
+                                      return CheckboxListTile(
+                                        title: Text('${student['name']} (${student['email']})'),
+                                        subtitle: Text([
+                                          if (student['admission_no'] != null) 'Admn: ${student['admission_no']}',
+                                          if (student['phone'] != null) 'Ph: ${student['phone']}'
+                                        ].join(' | ')),
+                                        value: _selectedStudentIds.contains(studentId),
+                                        onChanged: (bool? value) {
+                                          setModalState(() {
+                                            if (value == true) {
+                                              _selectedStudentIds.add(studentId);
+                                            } else {
+                                              _selectedStudentIds.remove(studentId);
+                                            }
+                                          });
+                                        },
+                                        controlAffinity: ListTileControlAffinity.leading,
+                                        dense: true,
+                                      );
+                                    }).toList(),
+                                  ],
+                                );
+                              }
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 32),
-          ],
+              ],
+            );
+          },
         );
       },
       actionBuilder: (context, setModalState) {
@@ -472,6 +633,7 @@ class _McqManagerPageState extends State<McqManagerPage> {
                         'start_time': startTimeController.text.isEmpty ? null : startTimeController.text,
                         'end_time': endTimeController.text.isEmpty ? null : endTimeController.text,
                         'invigilators': invigilatorsController.text.isEmpty ? null : invigilatorsController.text,
+                        'selected_student_ids': _selectedStudentIds,
                         'is_active': 1,
                       }),
                     );

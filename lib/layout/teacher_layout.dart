@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import '../auth/login_page.dart';
 import '../core/widgets/theme_toggle_button.dart';
+import '../core/widgets/app_zoom_scaler.dart';
 import '../teacher/teacher_dashboard.dart';
 import '../teacher/course_manager_page.dart';
 import '../teacher/batch_manager_page.dart';
@@ -135,22 +136,61 @@ class _TeacherLayoutState extends State<TeacherLayout> {
             color: theme.scaffoldBackgroundColor,
             border: Border(top: BorderSide(color: theme.dividerColor.withOpacity(0.1))),
           ),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.code, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.5)),
-                const SizedBox(width: 6),
-                Text(
-                  'Developed by Brotytics Technologies',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+          child: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.code, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Developed by Brotytics Technologies',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
                   ),
+                ],
+              ),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    final scaler = AppZoomScaler.of(context);
+                    if (scaler == null) return const SizedBox.shrink();
+                    
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        InkWell(
+                          onTap: scaler.zoomOut,
+                          child: Icon(Icons.remove, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: scaler.resetZoom,
+                          child: Text(
+                            '${(scaler.scale * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: scaler.zoomIn,
+                          child: Icon(Icons.add, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                    );
+                  }
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],

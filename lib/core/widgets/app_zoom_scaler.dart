@@ -17,6 +17,8 @@ class AppZoomScaler extends StatefulWidget {
 class _AppZoomScalerState extends State<AppZoomScaler> {
   double _scale = 1.0;
 
+  double get scale => _scale;
+
   @override
   void initState() {
     super.initState();
@@ -90,90 +92,7 @@ class _AppZoomScalerState extends State<AppZoomScaler> {
               ),
             ),
           ),
-          // Zoom controller overlay at bottom-right
-          Positioned(
-            bottom: 24,
-            right: 24,
-            child: Material(
-              type: MaterialType.transparency,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[900]!.withOpacity(0.9)
-                      : Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Zoom out (-) button
-                    _buildZoomButton(
-                      icon: Icons.remove,
-                      onPressed: zoomOut,
-                    ),
-                    const SizedBox(width: 8),
-                    // Percentage indicator / reset button
-                    InkWell(
-                      onTap: resetZoom,
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Text(
-                          '${(_scale * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Zoom in (+) button
-                    _buildZoomButton(
-                      icon: Icons.add,
-                      onPressed: zoomIn,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildZoomButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return InkWell(
-      onTap: onPressed,
-      customBorder: const CircleBorder(),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: Theme.of(context).colorScheme.primary,
-        ),
       ),
     );
   }
