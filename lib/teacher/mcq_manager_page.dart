@@ -148,6 +148,112 @@ class _McqManagerPageState extends State<McqManagerPage> {
     }
   }
 
+  Future<void> _showImportQuestionsDialog(Map<String, dynamic> paper) async {
+    final startController = TextEditingController();
+    final endController = TextEditingController();
+    bool isSubmitting = false;
+
+    if (paper['topic_id'] == null) {
+      SnackbarHelper.showError(context, 'This exam has no topic assigned. Edit the exam to assign a topic before importing.');
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Import Questions from Bank'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Enter the range of questions to import from the selected topic.'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: startController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Start Number (e.g. 1)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: endController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'End Number (e.g. 50)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting ? null : () async {
+                    final start = int.tryParse(startController.text);
+                    final end = int.tryParse(endController.text);
+
+                    if (start == null || end == null || start < 1 || end < start) {
+                      SnackbarHelper.showError(context, 'Please enter valid start and end numbers.');
+                      return;
+                    }
+
+                    setState(() => isSubmitting = true);
+                    final prefs = await SharedPreferences.getInstance();
+                    final token = prefs.getString('auth_token');
+
+                    try {
+                      final response = await http.post(
+                        Uri.parse('${ApiConstants.baseUrl}/mcq_papers/${paper['id']}/import-questions'),
+                        headers: {
+                          'Authorization': 'Bearer $token',
+                          'Accept': 'application/json',
+                          'Content-Type': 'application/json',
+                        },
+                        body: jsonEncode({
+                          'start_number': start,
+                          'end_number': end,
+                        }),
+                      );
+
+                      if (response.statusCode == 200) {
+                        final data = jsonDecode(response.body);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          SnackbarHelper.showSuccess(context, data['message'] ?? 'Import successful.');
+                        }
+                      } else {
+                        final data = jsonDecode(response.body);
+                        if (context.mounted) {
+                          SnackbarHelper.showError(context, data['message'] ?? 'Failed to import questions.');
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        SnackbarHelper.showError(context, 'Network error during import.');
+                      }
+                    } finally {
+                      if (context.mounted) {
+                        setState(() => isSubmitting = false);
+                      }
+                    }
+                  },
+                  child: isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Import'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
 
   void _showPaperModal({Map<String, dynamic>? paper}) {
     final isEdit = paper != null;
@@ -163,12 +269,41 @@ class _McqManagerPageState extends State<McqManagerPage> {
     final passwordController = TextEditingController(
       text: isEdit ? (paper['exam_password'] ?? '') : '',
     );
-    final startTimeController = TextEditingController(
-      text: isEdit ? (paper['start_time'] ?? '') : '',
-    );
-    final endTimeController = TextEditingController(
-      text: isEdit ? (paper['end_time'] ?? '') : '',
-    );
+    
+    String formatTimeAmPm(DateTime dt) {
+      int h = dt.hour;
+      int m = dt.minute;
+      String ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      if (h == 0) h = 12;
+      return "${h.toString().padLeft(2,'0')}:${m.toString().padLeft(2,'0')} $ampm";
+    }
+
+    String formatTimeRaw(DateTime dt) {
+      return "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
+    }
+
+    String? rawStartTime = isEdit ? paper['start_time'] : null;
+    String? rawEndTime = isEdit ? paper['end_time'] : null;
+
+    final startTimeController = TextEditingController();
+    if (rawStartTime != null && rawStartTime.isNotEmpty) {
+      try {
+        startTimeController.text = formatTimeAmPm(DateTime.parse(rawStartTime));
+      } catch (_) {
+        startTimeController.text = rawStartTime;
+      }
+    }
+
+    final endTimeController = TextEditingController();
+    if (rawEndTime != null && rawEndTime.isNotEmpty) {
+      try {
+        endTimeController.text = formatTimeAmPm(DateTime.parse(rawEndTime));
+      } catch (_) {
+        endTimeController.text = rawEndTime;
+      }
+    }
+
     final invigilatorsController = TextEditingController(
       text: isEdit ? (paper['invigilators'] ?? '') : '',
     );
@@ -187,6 +322,35 @@ class _McqManagerPageState extends State<McqManagerPage> {
     List<int> _selectedStudentIds = isEdit && paper['selected_student_ids'] != null 
         ? List<int>.from(paper['selected_student_ids'].map((x) => int.parse(x.toString())))
         : [];
+
+    int? selectedTopicId = isEdit ? paper['topic_id'] : null;
+    List<dynamic> _modalTopics = [];
+    bool _isLoadingTopics = false;
+
+    Future<void> _fetchTopicsForCourse(int courseId, StateSetter setModalState) async {
+      setModalState(() => _isLoadingTopics = true);
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      try {
+        final res = await http.get(
+          Uri.parse('${ApiConstants.baseUrl}/topics?course_id=$courseId'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
+        if (res.statusCode == 200) {
+          setModalState(() {
+            _modalTopics = jsonDecode(res.body);
+            _isLoadingTopics = false;
+          });
+        } else {
+          setModalState(() => _isLoadingTopics = false);
+        }
+      } catch (e) {
+        setModalState(() => _isLoadingTopics = false);
+      }
+    }
 
     Future<void> _fetchStudentsForBatch(int batchId, StateSetter setModalState) async {
       setModalState(() => _isLoadingStudents = true);
@@ -226,6 +390,10 @@ class _McqManagerPageState extends State<McqManagerPage> {
             // Fetch initial students if batch is already selected and we haven't fetched yet
             if (selectedBatchId != null && _batchStudents.isEmpty && !_isLoadingStudents) {
                _fetchStudentsForBatch(selectedBatchId!, setModalState);
+               final batch = _batches.firstWhere((b) => b['id'] == selectedBatchId, orElse: () => null);
+               if (batch != null && batch['course_id'] != null) {
+                 _fetchTopicsForCourse(batch['course_id'], setModalState);
+               }
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,10 +418,15 @@ class _McqManagerPageState extends State<McqManagerPage> {
                         if (val != null && val != selectedBatchId) {
                           setModalState(() {
                             selectedBatchId = val;
-                            // reset selection when batch changes
                             _selectedStudentIds.clear(); 
+                            selectedTopicId = null;
+                            _modalTopics = [];
                           });
                           _fetchStudentsForBatch(val, setModalState);
+                          final batch = _batches.firstWhere((b) => b['id'] == val, orElse: () => null);
+                          if (batch != null && batch['course_id'] != null) {
+                            _fetchTopicsForCourse(batch['course_id'], setModalState);
+                          }
                         }
                       },
                       decoration: InputDecoration(
@@ -266,6 +439,45 @@ class _McqManagerPageState extends State<McqManagerPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Select Topic (Optional)',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_isLoadingTopics)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      DropdownButtonFormField<int>(
+                        value: selectedTopicId,
+                        isExpanded: true,
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('No Topic'),
+                          ),
+                          ..._modalTopics.map<DropdownMenuItem<int>>((t) {
+                            return DropdownMenuItem<int>(
+                              value: t['id'],
+                              child: Text(t['title']),
+                            );
+                          }).toList()
+                        ],
+                        onChanged: (val) {
+                          setModalState(() {
+                            selectedTopicId = val;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: titleController,
@@ -313,6 +525,10 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                 // format as yyyy-mm-dd
                                 setModalState(() {
                                   dateController.text = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+                                  startTimeController.clear();
+                                  endTimeController.clear();
+                                  rawStartTime = null;
+                                  rawEndTime = null;
                                 });
                               }
                             },
@@ -375,11 +591,18 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                 final pickedTime = await showTimePicker(
                                   context: context,
                                   initialTime: TimeOfDay.now(),
+                                  builder: (BuildContext context, Widget? child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+                                      child: child!,
+                                    );
+                                  },
                                 );
                                 if (pickedTime != null) {
                                   final dt = DateTime(baseDate.year, baseDate.month, baseDate.day, pickedTime.hour, pickedTime.minute);
                                   setModalState(() {
-                                    startTimeController.text = "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
+                                    rawStartTime = formatTimeRaw(dt);
+                                    startTimeController.text = formatTimeAmPm(dt);
                                   });
                                 }
                               }
@@ -418,11 +641,18 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                 final pickedTime = await showTimePicker(
                                   context: context,
                                   initialTime: TimeOfDay.now(),
+                                  builder: (BuildContext context, Widget? child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+                                      child: child!,
+                                    );
+                                  },
                                 );
                                 if (pickedTime != null) {
                                   final dt = DateTime(baseDate.year, baseDate.month, baseDate.day, pickedTime.hour, pickedTime.minute);
                                   setModalState(() {
-                                    endTimeController.text = "${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}:00";
+                                    rawEndTime = formatTimeRaw(dt);
+                                    endTimeController.text = formatTimeAmPm(dt);
                                   });
                                 }
                               }
@@ -626,12 +856,13 @@ class _McqManagerPageState extends State<McqManagerPage> {
                       },
                       body: jsonEncode({
                         'batch_id': selectedBatchId,
+                        'topic_id': selectedTopicId,
                         'title': titleController.text,
                         'description': descController.text,
                         'exam_date': dateController.text.isEmpty ? null : dateController.text,
                         'exam_password': passwordController.text.isEmpty ? null : passwordController.text,
-                        'start_time': startTimeController.text.isEmpty ? null : startTimeController.text,
-                        'end_time': endTimeController.text.isEmpty ? null : endTimeController.text,
+                        'start_time': rawStartTime,
+                        'end_time': rawEndTime,
                         'invigilators': invigilatorsController.text.isEmpty ? null : invigilatorsController.text,
                         'selected_student_ids': _selectedStudentIds,
                         'is_active': 1,
@@ -1018,6 +1249,36 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.purple.withOpacity(0.1),
                                                   foregroundColor: Colors.purple,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 8,
+                                                      ),
+                                                  elevation: 0,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            MouseRegion(
+                                              cursor: SystemMouseCursors.click,
+                                              child: ElevatedButton.icon(
+                                                onPressed: () {
+                                                  _showImportQuestionsDialog(paper);
+                                                },
+                                                icon: const Icon(
+                                                  Icons.cloud_download,
+                                                  size: 16,
+                                                ),
+                                                label: const Text('Import Bank'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.orange.withOpacity(0.1),
+                                                  foregroundColor: Colors.orange,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(

@@ -11,6 +11,8 @@ import '../student/leaderboard_page.dart';
 import '../student/global_leaderboard_page.dart';
 import '../student/materials_page.dart';
 import '../student/feedbacks_page.dart';
+import '../student/about_page.dart';
+
 class StudentLayout extends StatefulWidget {
   final Widget child;
   final String title;
@@ -221,6 +223,7 @@ class _StudentLayoutState extends State<StudentLayout> {
       {'title': 'Feedbacks', 'icon': Icons.feedback_outlined, 'activeIcon': Icons.feedback, 'isActive': widget.title == 'Feedbacks', 'page': const FeedbacksPage()},
       {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': widget.title.contains('Leaderboard'), 'page': const GlobalLeaderboardPage()},
       {'title': 'My Profile', 'icon': Icons.person_outline, 'activeIcon': Icons.person, 'isActive': widget.title == 'My Profile', 'page': const MyProfilePage()},
+      {'title': 'About Us', 'icon': Icons.info_outline, 'activeIcon': Icons.info, 'isActive': widget.title == 'About Us', 'page': const StudentAboutPage()},
     ];
 
     return Container(

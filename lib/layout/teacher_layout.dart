@@ -9,9 +9,11 @@ import '../teacher/course_manager_page.dart';
 import '../teacher/batch_manager_page.dart';
 import '../teacher/students_page.dart';
 import '../teacher/mcq_manager_page.dart';
+import '../teacher/question_bank_page.dart';
 import '../teacher/material_manager_page.dart';
 import '../teacher/feedback_manager_page.dart';
 import '../teacher/global_leaderboard_page.dart';
+import '../teacher/about_page.dart';
 
 class TeacherLayout extends StatefulWidget {
   final Widget child;
@@ -223,9 +225,11 @@ class _TeacherLayoutState extends State<TeacherLayout> {
       {'title': 'Batches', 'icon': Icons.layers_outlined, 'activeIcon': Icons.layers, 'isActive': title == 'Batches', 'page': const BatchManagerPage()},
       {'title': 'Students', 'icon': Icons.people_outline, 'activeIcon': Icons.people, 'isActive': title == 'Students', 'page': const StudentsPage()},
       {'title': 'Questions', 'icon': Icons.assignment_outlined, 'activeIcon': Icons.assignment, 'isActive': title == 'MCQ Papers', 'page': const McqManagerPage()},
+      {'title': 'Question Bank', 'icon': Icons.storage_outlined, 'activeIcon': Icons.storage, 'isActive': title == 'Question Bank', 'page': const QuestionBankPage()},
       {'title': 'Leaderboard', 'icon': Icons.leaderboard_outlined, 'activeIcon': Icons.leaderboard, 'isActive': title.contains('Leaderboard'), 'page': const TeacherGlobalLeaderboardPage()},
       {'title': 'Study Materials', 'icon': Icons.library_books_outlined, 'activeIcon': Icons.library_books, 'isActive': title == 'Study Materials', 'page': const MaterialManagerPage()},
       {'title': 'Student Feedbacks', 'icon': Icons.feedback_outlined, 'activeIcon': Icons.feedback, 'isActive': title == 'Student Feedbacks', 'page': const FeedbackManagerPage()},
+      {'title': 'About Us', 'icon': Icons.info_outline, 'activeIcon': Icons.info, 'isActive': title == 'About Us', 'page': const TeacherAboutPage()},
     ];
 
     return Container(
