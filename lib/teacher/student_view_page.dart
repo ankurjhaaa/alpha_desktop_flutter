@@ -271,15 +271,15 @@ class _StudentViewPageState extends State<StudentViewPage> {
                         child: Row(
                           children: [
                             CircleAvatar(
-                              radius: 36,
+                              radius: 64,
                               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                              backgroundImage: _student!['profile_image'] != null
+                              backgroundImage: _student!['profile_image'] != null && _student!['profile_image'].toString().startsWith('http')
                                   ? NetworkImage(_student!['profile_image'])
                                   : null,
                               child: _student!['profile_image'] == null
                                   ? Text(
                                       _student!['name'][0].toUpperCase(),
-                                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                                      style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                                     )
                                   : null,
                             ),

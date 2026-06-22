@@ -1062,7 +1062,16 @@ class _McqManagerPageState extends State<McqManagerPage> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                        boxShadow: Theme.of(context).brightness == Brightness.light
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
                       ),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
@@ -1073,31 +1082,20 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                 minWidth: constraints.maxWidth,
                               ),
                               child: DataTable(
-                                headingRowColor: WidgetStateProperty.all(
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withOpacity(0.05),
-                                ),
+                                headingRowColor: WidgetStateProperty.all(Theme.of(context).brightness == Brightness.light ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
                                 dataRowColor: WidgetStateProperty.all(
                                   Colors.transparent,
                                 ),
                                 dividerThickness: 1,
                                 border: TableBorder(
                                   horizontalInside: BorderSide(
-                                    color: Theme.of(
-                                      context,
-                                    ).dividerColor.withOpacity(0.5),
+                                    color: Theme.of(context).dividerColor,
                                     width: 1,
                                   ),
                                 ),
-                                headingTextStyle: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
-                                ),
-                                dataRowMinHeight: 80,
-                                dataRowMaxHeight: 90,
+                                headingTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).brightness == Brightness.light ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+                                dataRowMinHeight: 64,
+                                dataRowMaxHeight: 64,
                                 columns: const [
                                   DataColumn(label: Text('S.No')),
                                   DataColumn(label: Text('Paper Title')),

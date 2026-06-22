@@ -169,6 +169,7 @@ class _StudentsPageState extends State<StudentsPage> {
 
 
   void _showStudentModal({Map<String, dynamic>? student}) {
+    final pageContext = context;
     final isEdit = student != null;
     final nameController = TextEditingController(
       text: isEdit ? student['name'] : '',
@@ -219,7 +220,7 @@ class _StudentsPageState extends State<StudentsPage> {
                     backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     backgroundImage: selectedImageBytes != null
                         ? MemoryImage(selectedImageBytes!)
-                        : (isEdit && student['profile_image'] != null
+                        : (isEdit && student['profile_image'] != null && student['profile_image'].toString().startsWith('http')
                             ? NetworkImage(student['profile_image']) as ImageProvider
                             : null),
                     child: selectedImageBytes == null && (!isEdit || student['profile_image'] == null)
@@ -500,19 +501,35 @@ class _StudentsPageState extends State<StudentsPage> {
               cursor: SystemMouseCursors.click,
               child: ElevatedButton(
                 onPressed: () async {
+                  print('--- SAVE BUTTON CLICKED ---');
+                  print('Name: \${nameController.text}, Email: \${emailController.text}, isEdit: \$isEdit');
                   if (nameController.text.isEmpty ||
                       emailController.text.isEmpty) {
-                    SnackbarHelper.showError(
-                      context,
-                      'Please fill in all required fields.',
-                    );
+                    print('--- FAILED: Name or email is empty ---');
+                    if (pageContext.mounted) {
+                      showDialog(
+                        context: pageContext,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Validation Error'),
+                          content: const Text('Please fill in all required fields.'),
+                          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+                        ),
+                      );
+                    }
                     return;
                   }
                   if (!isEdit && passwordController.text.isEmpty) {
-                    SnackbarHelper.showError(
-                      context,
-                      'Password is required for new students.',
-                    );
+                    print('--- FAILED: Password empty for new student ---');
+                    if (pageContext.mounted) {
+                      showDialog(
+                        context: pageContext,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Validation Error'),
+                          content: const Text('Password is required for new students.'),
+                          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+                        ),
+                      );
+                    }
                     return;
                   }
 
@@ -543,6 +560,9 @@ class _StudentsPageState extends State<StudentsPage> {
                   if (passwordController.text.isNotEmpty) {
                     bodyData['password'] = passwordController.text;
                   }
+                  
+                  print('--- API CALL: \$url ---');
+                  print('Body: \$bodyData');
 
                   try {
                     var request = http.MultipartRequest(
@@ -577,18 +597,23 @@ class _StudentsPageState extends State<StudentsPage> {
                       );
                     }
 
+                    print('--- SENDING REQUEST ---');
                     final streamedResponse = await request.send();
                     final response = await http.Response.fromStream(streamedResponse);
+                    print('--- RESPONSE: \${response.statusCode} ---');
+                    print('--- BODY: \${response.body} ---');
 
                     if (response.statusCode == 201 || response.statusCode == 200) {
                       if (context.mounted) Navigator.pop(context);
                       _fetchData();
-                      SnackbarHelper.showSuccess(
-                        context,
-                        isEdit
-                            ? 'Student updated successfully.'
-                            : 'Student registered successfully.',
-                      );
+                      if (pageContext.mounted) {
+                        SnackbarHelper.showSuccess(
+                          pageContext,
+                          isEdit
+                              ? 'Student updated successfully.'
+                              : 'Student registered successfully.',
+                        );
+                      }
                     } else if (response.statusCode == 422) {
                       final data = jsonDecode(response.body);
                       String errorMsg =
@@ -600,18 +625,39 @@ class _StudentsPageState extends State<StudentsPage> {
                           errorMsg = errors.values.first[0];
                         }
                       }
-                      SnackbarHelper.showError(context, errorMsg);
+                      if (pageContext.mounted) {
+                        showDialog(
+                          context: pageContext,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Validation Error'),
+                            content: Text(errorMsg),
+                            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+                          ),
+                        );
+                      }
                     } else {
-                      SnackbarHelper.showError(
-                        context,
-                        'Failed to save student. Email might already exist.',
-                      );
+                      if (pageContext.mounted) {
+                        showDialog(
+                          context: pageContext,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Error'),
+                            content: const Text('Failed to save student. Email might already exist.'),
+                            actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+                          ),
+                        );
+                      }
                     }
                   } catch (e) {
-                    SnackbarHelper.showError(
-                      context,
-                      'Network error while saving student.',
-                    );
+                    if (pageContext.mounted) {
+                      showDialog(
+                        context: pageContext,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Network Error'),
+                          content: Text('Error: $e'), // Added the actual exception to see what's wrong
+                          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -777,7 +823,16 @@ class _StudentsPageState extends State<StudentsPage> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                        boxShadow: Theme.of(context).brightness == Brightness.light
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
                       ),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
@@ -788,31 +843,20 @@ class _StudentsPageState extends State<StudentsPage> {
                                 minWidth: constraints.maxWidth,
                               ),
                               child: DataTable(
-                                headingRowColor: WidgetStateProperty.all(
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withOpacity(0.05),
-                                ),
+                                headingRowColor: WidgetStateProperty.all(Theme.of(context).brightness == Brightness.light ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
                                 dataRowColor: WidgetStateProperty.all(
                                   Colors.transparent,
                                 ),
                                 dividerThickness: 1,
                                 border: TableBorder(
                                   horizontalInside: BorderSide(
-                                    color: Theme.of(
-                                      context,
-                                    ).dividerColor.withOpacity(0.5),
+                                    color: Theme.of(context).dividerColor,
                                     width: 1,
                                   ),
                                 ),
-                                headingTextStyle: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
-                                ),
-                                dataRowMinHeight: 80,
-                                dataRowMaxHeight: 90,
+                                headingTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).brightness == Brightness.light ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
+                                dataRowMinHeight: 64,
+                                dataRowMaxHeight: 64,
                                 columns: const [
                                   DataColumn(label: Text('ID')),
                                   DataColumn(label: Text('Student Name')),
@@ -834,7 +878,7 @@ class _StudentsPageState extends State<StudentsPage> {
                                                   .colorScheme
                                                   .primary
                                                   .withOpacity(0.1),
-                                              backgroundImage: student['profile_image'] != null
+                                              backgroundImage: student['profile_image'] != null && student['profile_image'].toString().startsWith('http')
                                                   ? NetworkImage(student['profile_image'])
                                                   : null,
                                               child: student['profile_image'] == null
