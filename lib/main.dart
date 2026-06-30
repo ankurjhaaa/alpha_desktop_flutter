@@ -50,7 +50,27 @@ class MyApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme,
           home: initialPage,
           builder: (context, child) {
-            return AppZoomScaler(child: child!);
+            return Stack(
+              children: [
+                AppZoomScaler(child: child!),
+                IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.05, // very light opacity
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/watermark.png'),
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
           },
         );
       },

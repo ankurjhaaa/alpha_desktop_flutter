@@ -1094,8 +1094,6 @@ class _McqManagerPageState extends State<McqManagerPage> {
                                   ),
                                 ),
                                 headingTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).brightness == Brightness.light ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
-                                dataRowMinHeight: 64,
-                                dataRowMaxHeight: 64,
                                 columns: const [
                                   DataColumn(label: Text('S.No')),
                                   DataColumn(label: Text('Paper Title')),

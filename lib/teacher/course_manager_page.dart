@@ -793,9 +793,7 @@ class _CourseManagerPageState extends State<CourseManagerPage> {
                                   ),
                                 ),
                                 headingTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).brightness == Brightness.light ? const Color(0xFF475569) : const Color(0xFF94A3B8)),
-                                dataRowMinHeight: 64,
-                                dataRowMaxHeight: 64,
-                                 columns: const [
+                                columns: const [
                                   DataColumn(label: Text('ID')),
                                   DataColumn(label: Text('Course Name')),
                                   DataColumn(label: Text('Description')),

@@ -42,7 +42,11 @@ class AppTheme {
     cardColor: Colors.white,
     dialogBackgroundColor: Colors.white,
     dividerColor: const Color(0xFFE2E8F0),
-        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).copyWith(
+    dataTableTheme: const DataTableThemeData(
+      dataRowMinHeight: 48,
+      dataRowMaxHeight: 120,
+    ),
+    textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).copyWith(
       displayLarge: GoogleFonts.inter(color: const Color(0xFF0F172A)),
       displayMedium: GoogleFonts.inter(color: const Color(0xFF0F172A)),
       displaySmall: GoogleFonts.inter(color: const Color(0xFF0F172A)),
@@ -142,6 +146,10 @@ class AppTheme {
     cardColor: const Color(0xFF1E293B),
     dialogBackgroundColor: const Color(0xFF1E293B),
     dividerColor: const Color(0xFF334155),
+    dataTableTheme: const DataTableThemeData(
+      dataRowMinHeight: 48,
+      dataRowMaxHeight: 120,
+    ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {

@@ -190,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(8 * scale),
+                    padding: EdgeInsets.all(4 * scale),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
@@ -201,8 +201,8 @@ class _LoginPageState extends State<LoginPage> {
                     child: ClipOval(
                       child: Image.asset(
                         'assets/images/logo.png',
-                        height: 280 * scale,
-                        width: 280 * scale,
+                        height: 250 * scale,
+                        width: 250 * scale,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 120 * scale, color: primaryColor),
                       ),
