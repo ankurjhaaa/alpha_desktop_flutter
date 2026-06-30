@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'dart:math' as math;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,142 +101,154 @@ class _LoginPageState extends State<LoginPage> {
     final isDesktop = size.width > 800;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF4F6F8),
-      body: Stack(
-        children: [
-          if (isDesktop)
-            Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: _buildHeroSection(context, isDark),
+      body: Container(
+        decoration: BoxDecoration(
+          color: isDark ? null : Colors.white,
+          gradient: isDark 
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A1A2E), Color(0xFF0F172A)],
+              )
+            : null,
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -150,
+              left: -100,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? Colors.white.withOpacity(0.03) : primaryColor.withOpacity(0.03),
                 ),
-                Expanded(
-                  flex: 5,
-                  child: _buildFormSection(context, isDark),
-                ),
-              ],
-            )
-          else
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildMobileHero(context, isDark),
-                  Transform.translate(
-                    offset: const Offset(0, -40),
-                    child: _buildFormSection(context, isDark, isMobile: true),
-                  ),
-                ],
               ),
             ),
-          Positioned(
-            top: 24,
-            right: 24,
-            child: ThemeToggleButton(controller: themeController),
-          ),
-        ],
+            Positioned(
+              bottom: -100,
+              right: -50,
+              child: Container(
+                width: 500,
+                height: 500,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? Colors.white.withOpacity(0.04) : primaryColor.withOpacity(0.04),
+                ),
+              ),
+            ),
+            if (isDesktop)
+              Row(
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: _buildHeroSection(context, isDark),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: _buildFormSection(context, isDark),
+                  ),
+                ],
+              )
+            else
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildMobileHero(context, isDark),
+                    Transform.translate(
+                      offset: const Offset(0, -40),
+                      child: _buildFormSection(context, isDark, isMobile: true),
+                    ),
+                  ],
+                ),
+              ),
+            Positioned(
+              top: 24,
+              right: 24,
+              child: ThemeToggleButton(controller: themeController),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeroSection(BuildContext context, bool isDark) {
+    final size = MediaQuery.of(context).size;
+    final double scale = (size.height / 1000).clamp(0.5, 0.9);
     final primaryColor = Theme.of(context).colorScheme.primary;
     
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark 
-            ? [const Color(0xFF1A1A2E), const Color(0xFF0F172A)]
-            : [primaryColor, const Color(0xFF0A2E6B)], // Deep pure blue gradient
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Decorative Abstract Circles
-          Positioned(
-            top: -150,
-            left: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.03),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -100,
-            right: -50,
-            child: Container(
-              width: 500,
-              height: 500,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.04),
-              ),
-            ),
-          ),
-          // Hero Content
-          Center(
+    return Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              padding: EdgeInsets.symmetric(horizontal: 64.0 * scale, vertical: 64.0 * scale),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(8 * scale),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      shape: BoxShape.circle,
+                      boxShadow: isDark ? null : [
+                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))
+                      ],
                     ),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      height: 140,
-                      width: 140,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 80, color: primaryColor),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Alpha Graphics\nPortal',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      height: 1.1,
-                      letterSpacing: -1.0,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: 280 * scale,
+                        width: 280 * scale,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 120 * scale, color: primaryColor),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 56 * scale),
                   Text(
-                    'Your ultimate gateway to interactive learning. Access tailored test series, track your progress, and achieve academic excellence.',
+                    'Welcome to',
                     style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white.withOpacity(0.85),
-                      height: 1.5,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 24 * scale,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
+                      letterSpacing: 0,
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  _buildFeatureRow(Icons.menu_book_rounded, 'Comprehensive Test Series'),
-                  const SizedBox(height: 16),
-                  _buildFeatureRow(Icons.insights_rounded, 'In-Depth Performance Analytics'),
-                  const SizedBox(height: 16),
-                  _buildFeatureRow(Icons.laptop_chromebook_rounded, 'Interactive Online Exam'),
+                  SizedBox(height: 4 * scale),
+                  Text(
+                    'Alpha Graphics',
+                    style: TextStyle(
+                      fontSize: 72 * scale,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : const Color(0xFF1E1E1E),
+                      height: 1.1,
+                      letterSpacing: -2.0,
+                    ),
+                  ),
+                  SizedBox(height: 24 * scale),
+                  Text(
+                    'Your gateway to interactive learning and creative excellence with our Test Series App. Sign in to access your personalized dashboard, practice with tailored test series, track your progress, and explore endless possibilities for academic and competitive success.',
+                    style: TextStyle(
+                      fontSize: 26 * scale,
+                      color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
+                      height: 1.6,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 56 * scale),
+                  _buildFeatureRow(context, Icons.menu_book_rounded, 'Comprehensive Test Series', scale),
+                  SizedBox(height: 24 * scale),
+                  _buildFeatureRow(context, Icons.insights_rounded, 'In-Depth Performance Analytics', scale),
+                  SizedBox(height: 24 * scale),
+                  _buildFeatureRow(context, Icons.laptop_chromebook_rounded, 'Interactive Online Exam', scale),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          );
   }
 
   Widget _buildMobileHero(BuildContext context, bool isDark) {
@@ -242,37 +256,30 @@ class _LoginPageState extends State<LoginPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(32, 80, 32, 100),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark 
-            ? [const Color(0xFF1A1A2E), const Color(0xFF0F172A)]
-            : [primaryColor, const Color(0xFF0A2E6B)],
-        ),
-      ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              shape: BoxShape.circle,
             ),
-            child: Image.asset(
-              'assets/images/logo.png',
-              height: 140,
-              width: 140,
-              errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 80, color: primaryColor),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 160,
+                width: 160,
+                errorBuilder: (context, error, stackTrace) => Icon(Icons.school, size: 80, color: primaryColor),
+              ),
             ),
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Welcome Back',
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: isDark ? Colors.white : const Color(0xFF1E1E1E),
               letterSpacing: -1,
             ),
           ),
@@ -281,7 +288,7 @@ class _LoginPageState extends State<LoginPage> {
             'Sign in to access your portal',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white.withOpacity(0.8),
+              color: isDark ? Colors.white.withOpacity(0.85) : Colors.black87,
             ),
           ),
         ],
@@ -289,26 +296,31 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildFeatureRow(IconData icon, String text) {
+  Widget _buildFeatureRow(BuildContext context, IconData icon, String text, double scale) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(12 * scale),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            color: isDark ? Colors.white.withOpacity(0.1) : primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12 * scale),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : primaryColor.withOpacity(0.1)),
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(icon, color: isDark ? Colors.white : primaryColor, size: 28 * scale),
         ),
-        const SizedBox(width: 20),
-        Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.3,
+        SizedBox(width: 24 * scale),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF1E1E1E),
+              fontSize: 22 * scale,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.5,
+            ),
           ),
         ),
       ],
@@ -316,49 +328,70 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildFormSection(BuildContext context, bool isDark, {bool isMobile = false}) {
+    final size = MediaQuery.of(context).size;
+    final double scale = isMobile ? 1.0 : (size.height / 1000).clamp(0.5, 0.9);
+
     return Center(
-      child: Container(
-        constraints: BoxConstraints(maxWidth: isMobile ? 560 : 680),
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 48),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(vertical: 24.0 * scale),
         child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade300,
-              width: 1.5,
+          constraints: BoxConstraints(maxWidth: isMobile ? 560 : 680 * scale),
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 48 * scale),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: isDark ? 24.0 : 0.0, sigmaY: isDark ? 24.0 : 0.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? null : Colors.white,
+                  gradient: isDark ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.12),
+                      Colors.white.withOpacity(0.04),
+                    ],
+                  ) : null,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark ? Colors.white.withOpacity(0.2) : Colors.grey.shade300,
+                    width: 1.5,
+                  ),
+                ),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 40 : 72 * scale, 
+              vertical: isMobile ? 64 : 110 * scale,
             ),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 40 : 56, vertical: isMobile ? 64 : 88),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Sign In',
+                'Welcome Back',
                 style: TextStyle(
-                  fontSize: 36,
+                  fontSize: 42 * scale,
                   fontWeight: FontWeight.w900,
                   color: Theme.of(context).colorScheme.onSurface,
-                  letterSpacing: -1,
+                  letterSpacing: -1.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
-                'Enter your credentials to continue',
+                'Please enter your credentials to access your account',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 16,
+                  fontSize: 18 * scale,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 48),
+              SizedBox(height: 56 * scale),
               CustomTextField(
                 label: 'Email Address',
                 hintText: 'name@example.com',
                 controller: _emailController,
                 prefixIcon: Icons.email_rounded,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 32 * scale),
               CustomTextField(
                 label: 'Password',
                 hintText: '••••••••',
@@ -367,7 +400,7 @@ class _LoginPageState extends State<LoginPage> {
                 prefixIcon: Icons.lock_rounded,
                 suffixIcon: Icons.visibility_rounded,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 24 * scale),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -378,14 +411,14 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: const Text(
                     'Forgot Password?',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 56 * scale),
               SizedBox(
                 width: double.infinity,
-                height: 60,
+                height: 64 * scale,
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
@@ -398,19 +431,19 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               'Sign In to Dashboard',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 20 * scale,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
+                                letterSpacing: -0.5,
                               ),
                             ),
-                            SizedBox(width: 12),
-                            Icon(Icons.arrow_forward_rounded, size: 22),
+                            SizedBox(width: 12 * scale),
+                            Icon(Icons.arrow_forward_rounded, size: 24 * scale),
                           ],
                         ),
                       ),
@@ -418,6 +451,9 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
         ),
+        ),
+        ),
+      ),
       ),
     );
   }
